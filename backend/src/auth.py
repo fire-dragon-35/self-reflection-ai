@@ -1,3 +1,5 @@
+# backend/src/auth.py
+
 from flask import request
 from config import CLERK_SECRET_KEY
 from clerk_backend_api import Clerk
@@ -13,7 +15,6 @@ def get_user_id() -> str | None:
     token = auth_header.replace("Bearer ", "")
 
     try:
-        # Verify session token
         session = clerk.sessions.verify_token(token)  # type: ignore
         return session.user_id  # type: ignore
     except Exception as e:
