@@ -1,12 +1,12 @@
 # Reflektion
 
-**AI-powered self-reflection for understanding your patterns, personality, and relationships.**
+**AI-powered self-reflection for understanding your patterns and personality.**
 
 ---
 
 ## What is Reflektion?
 
-Reflektion is a privacy-first mental health companion that helps you understand yourself through conversations with AI. Chat about your thoughts, relationships, and emotions—then get insights into your personality (Big Five) and attachment style.
+Reflektion helps you understand yourself through conversations with AI. Reflect on your thoughts, explore your patterns, and discover insights about your personality and how you relate to others.
 
 **Not therapy. Not journaling. Self-knowledge.**
 
@@ -14,14 +14,12 @@ Reflektion is a privacy-first mental health companion that helps you understand 
 
 ## ✨ Why Reflektion?
 
-- **🔒 Fully encrypted** - Your conversations, insights, everything. We can't read your data even if we wanted to.
-- **👤 Anonymous** - No name, email, or personal info required. Just sign in and start.
-- **📖 Open source** - Audit our code on GitHub. Verify our privacy claims yourself.
-- **🧠 Deep insights** - Discover your Big Five personality traits and attachment style.
-- **📊 Track patterns** - See how you're changing over time. Spot spirals early.
-- **💼 Export for therapists** - Share AI-generated summaries with your therapist.
-- **💰 Affordable** - $9.99/month vs $200+ therapy sessions.
-- **🕐 24/7 available** - Chat whenever you need, no appointments.
+- **🔒 Fully encrypted** - All conversations and insights are private.
+- **👤 Anonymous** - No name or email required. Just sign in and start.
+- **📖 Open source** - Audit the code on GitHub.
+- **🧠 Deep insights** - Discover your Big Five personality traits and attachment style (more to come later)
+- **📊 Track growth** - See how you're evolving over time.
+- **💼 Exportable data** - Share collected summaries and analyses with a real therapist.
 
 ---
 
@@ -34,30 +32,12 @@ Reflektion is a privacy-first mental health companion that helps you understand 
 
 ---
 
-## Pricing
-
-**Free:**
-- 5 messages per month
-- 1 analysis per month
-- Basic insights
-
-**Pro ($9.99/month):**
-- Unlimited messages
-- Unlimited analyses
-- Full conversation history
-- Export for therapist
-- Delete data anytime
-
----
-
 ## Privacy first
 
-Unlike other mental health apps, we:
-- ✅ Encrypt everything (conversations + insights)
-- ✅ Don't require your real name or email
-- ✅ Never sell or share your data
-- ✅ Give you full control (export/delete anytime)
-- ✅ Open source our code for transparency
+- ✅ Everything encrypted (conversations + insights)
+- ✅ No name or email required
+- ✅ Full control (export/delete anytime)
+- ✅ Open source code
 
 ---
 
@@ -66,8 +46,7 @@ Unlike other mental health apps, we:
 **Backend:** Flask, PostgreSQL, SQLAlchemy  
 **Frontend:** Svelte, Tailwind CSS  
 **Auth:** Clerk  
-**AI:** Claude (Anthropic)  
-**Encryption:** Fernet (symmetric encryption)
+**AI:** Claude (Anthropic)
 
 ---
 
