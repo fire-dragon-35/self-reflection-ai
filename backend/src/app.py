@@ -18,7 +18,7 @@ from rate_limit import limiter
 from services import (
     load_user_context,
     save_context_to_db,
-    analyze_user_conversation,
+    analyse_user_conversation,
     clear_user_cache,
     user_sessions,
 )
@@ -95,7 +95,7 @@ def chat():
     user_message_count = sum(1 for m in history if m["role"] == "user")
     if user_message_count % ANALYSIS_FREQUENCY == 0:
         # this writes to our db
-        analyze_user_conversation(user_id, analysis_ai)
+        analyse_user_conversation(user_id, analysis_ai)
 
     return jsonify({"response": response_text})
 
@@ -136,7 +136,7 @@ def trigger_analysis():
     if not user_id:
         return jsonify({"error": "Unauthorized"}), 401
 
-    analysis = analyze_user_conversation(user_id, analysis_ai)
+    analysis = analyse_user_conversation(user_id, analysis_ai)
 
     if analysis:
         return jsonify({"message": "Analysis complete", "analysis": analysis.to_dict()})

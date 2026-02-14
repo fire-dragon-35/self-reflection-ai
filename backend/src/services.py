@@ -11,7 +11,7 @@ import json
 Services here:
 - load_user_context
 - save_context_to_db
-- analyze_user_conversation
+- analyse_user_conversation
 - clear_user_cache
 """
 
@@ -61,7 +61,7 @@ def _clean(text: str) -> str:
     return text.replace("```json", "").replace("```", "").strip()
 
 
-def analyze_user_conversation(user_id: str, analysis_ai: AI) -> Analysis | None:
+def analyse_user_conversation(user_id: str, analysis_ai: AI) -> Analysis | None:
     history = load_user_context(user_id)
 
     if len(history) < 6:
