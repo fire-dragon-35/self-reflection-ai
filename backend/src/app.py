@@ -1,5 +1,8 @@
 # backend/src/app.py
 
+from dotenv import load_dotenv
+
+load_dotenv()
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from models import db, User, Analysis
@@ -25,7 +28,6 @@ from services import (
     user_sessions,
 )
 from typing import cast
-from dotenv import load_dotenv
 
 """
 Endpoints:
@@ -37,8 +39,6 @@ Endpoints:
 - DELETE /api/user
 - DELETE /api/data
 """
-
-load_dotenv()
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URI

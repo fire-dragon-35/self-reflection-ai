@@ -15,12 +15,12 @@ MAX_TOKENS = {
 MAX_CONTEXT_MESSAGES = 20
 ANALYSIS_FREQUENCY = 5
 
-DATABASE_URI = os.getenv("DATABASE_URI")
-CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY")
+DATABASE_URI = os.getenv("DATABASE_URI", "sqlite:///reflektion.db")
 SENTRY_DSN = os.getenv("SENTRY_DSN")
 FLASK_ENV = os.getenv("FLASK_ENV", "development")
 ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+CLERK_DOMAIN = os.getenv("CLERK_DOMAIN")
 
 BIG_FIVE_PROMPT_HEADER = f"""
 Analyse this conversation and determine the user's Big Five personality traits.

@@ -1,10 +1,9 @@
-# backend/src/auth.py
-
 from flask import request
-from config import CLERK_SECRET_KEY
-from clerk_backend_api import Clerk
+import jwt
+from jwt import PyJWKClient
+from config import CLERK_DOMAIN
 
-clerk = Clerk(bearer_auth=CLERK_SECRET_KEY)
+JWKS_URL = f"{CLERK_DOMAIN}/.well-known/jwks.json"
 
 
 def get_user_id() -> str | None:
@@ -15,8 +14,17 @@ def get_user_id() -> str | None:
     token = auth_header.replace("Bearer ", "")
 
     try:
-        session = clerk.sessions.verify_token(token)  # type: ignore
-        return session.user_id  # type: ignore
+        jwks_client = PyJWKClient(JWKS_URL)
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
+
+        # verify and decode the token
+        decoded = jwt.decode(
+            token, signing_key.key, algorithms=["RS256"], options={"verify_aud": False}
+        )
+
+        user_id = decoded.get("sub")
+        return user_id
+
     except Exception as e:
         print(f"Auth error: {e}")
         return None
