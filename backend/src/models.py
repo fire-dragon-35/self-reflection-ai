@@ -57,6 +57,9 @@ class User(db.Model):
     analyses = db.relationship(
         "Analysis", backref="user", lazy="dynamic", cascade="all, delete-orphan"
     )
+    summary = db.relationship(
+        "Summary", backref="user", uselist=False, cascade="all, delete-orphan"
+    )
 
 
 class Context(db.Model):
@@ -126,3 +129,23 @@ class Analysis(db.Model):
             "attachment_style": self.attachment_style,
             "timestamp": self.timestamp.isoformat(),
         }
+
+
+class Summary(db.Model):
+    # rolling summary of conversation
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.String(100), db.ForeignKey("user.user_id"), nullable=False, unique=True
+    )
+
+    summary_encrypted = db.Column(db.Text, nullable=False)
+
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    @property
+    def summary(self) -> str:
+        return decrypt(self.summary_encrypted)
+
+    @summary.setter
+    def summary(self, value: str) -> None:
+        self.summary_encrypted = encrypt(value)

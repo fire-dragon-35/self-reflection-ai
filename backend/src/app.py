@@ -12,6 +12,7 @@ from config import (
     ANALYSIS_FREQUENCY,
     RATE_LIMITS,
     ALLOWED_ORIGINS,
+    CHAT_PROMPT_HEADER
 )
 from auth import get_user_id
 from rate_limit import limiter
@@ -20,6 +21,7 @@ from services import (
     save_context_to_db,
     analyse_user_conversation,
     clear_user_cache,
+    update_user_summary,
     user_sessions,
 )
 from typing import cast
@@ -55,7 +57,7 @@ CORS(
 db.init_app(app)
 limiter.init_app(app)
 
-chat_ai = AI(model=MODELS["chat"], max_tokens=MAX_TOKENS["chat"])
+chat_ai = AI(model=MODELS["chat"], max_tokens=MAX_TOKENS["chat"], system_prompt=CHAT_PROMPT_HEADER)
 analysis_ai = AI(model=MODELS["analysis"], max_tokens=MAX_TOKENS["analysis"])
 
 
@@ -88,14 +90,15 @@ def chat():
     if len(history) > MAX_CONTEXT_MESSAGES:
         history = history[-MAX_CONTEXT_MESSAGES:]
 
-    # save to in-memory cache and database
+    # save to cache and database
     user_sessions[user_id] = history
     save_context_to_db(user_id, history)
 
+    # analyse every N messages
     user_message_count = sum(1 for m in history if m["role"] == "user")
     if user_message_count % ANALYSIS_FREQUENCY == 0:
-        # this writes to our db
         analyse_user_conversation(user_id, analysis_ai)
+        update_user_summary(user_id, analysis_ai)
 
     return jsonify({"response": response_text})
 
