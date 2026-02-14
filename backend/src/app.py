@@ -7,7 +7,7 @@ from ai import AI
 from config import (
     MODELS,
     MAX_TOKENS,
-    DATABASE_URL,
+    DATABASE_URI,
     MAX_CONTEXT_MESSAGES,
     ANALYSIS_FREQUENCY,
     RATE_LIMITS,
@@ -31,7 +31,7 @@ Endpoints:
 - POST /api/chat
 - GET /api/messages
 - GET /api/analysis
-- POST /api/analyze
+- POST /api/analyse
 - DELETE /api/user
 - DELETE /api/data
 """
@@ -39,7 +39,7 @@ Endpoints:
 load_dotenv()
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
+app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URI
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 CORS(
@@ -88,13 +88,13 @@ def chat():
     if len(history) > MAX_CONTEXT_MESSAGES:
         history = history[-MAX_CONTEXT_MESSAGES:]
 
+    # save to in-memory cache and database
     user_sessions[user_id] = history
+    save_context_to_db(user_id, history)
 
     user_message_count = sum(1 for m in history if m["role"] == "user")
-    if user_message_count % 5 == 0:
-        save_context_to_db(user_id, history)
-
     if user_message_count % ANALYSIS_FREQUENCY == 0:
+        # this writes to our db
         analyze_user_conversation(user_id, analysis_ai)
 
     return jsonify({"response": response_text})
@@ -129,7 +129,7 @@ def get_analysis():
     return jsonify({"analysis": [a.to_dict() for a in analyses]})
 
 
-@app.route("/api/analyze", methods=["POST"])
+@app.route("/api/analyse", methods=["POST"])
 @limiter.limit(RATE_LIMITS["analysis"])
 def trigger_analysis():
     user_id = get_user_id()
