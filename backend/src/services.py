@@ -4,7 +4,11 @@ from models import db, User, Context, Analysis
 from datetime import datetime, timezone
 from typing import cast
 from ai import AI
-from config import BIG_FIVE_PROMPT_HEADER, ATTACHMENT_STYLE_PROMPT_HEADER, SUMMARY_PROMPT_HEADER
+from config import (
+    BIG_FIVE_PROMPT_HEADER,
+    ATTACHMENT_STYLE_PROMPT_HEADER,
+    SUMMARY_PROMPT_HEADER,
+)
 import json
 
 """
@@ -106,32 +110,31 @@ def clear_user_cache(user_id: str) -> None:
 
 def update_user_summary(user_id: str, analysis_ai: AI) -> None:
     user = _get_or_create_user(user_id)
-    
+
     recent_history = load_user_context(user_id)
-    
+
     existing_summary = ""
     if user.summary:
         existing_summary = user.summary.summary
-    
-    conversation = "\n\n".join([
-        f"{m['role'].title()}: {m['content']}"
-        for m in recent_history
-    ])
+
+    conversation = "\n\n".join(
+        [f"{m['role'].title()}: {m['content']}" for m in recent_history]
+    )
 
     prompt = (
-    SUMMARY_PROMPT_HEADER + 
-    f"\n\nPrevious summary:\n{existing_summary if existing_summary else 'None - this is the first summary.'}\n\n" +
-    f"Recent conversations:\n{conversation}"
+        SUMMARY_PROMPT_HEADER
+        + f"\n\nPrevious summary:\n{existing_summary if existing_summary else 'None - this is the first summary.'}\n\n"
+        + f"Recent conversations:\n{conversation}"
     )
 
     new_summary = analysis_ai.ask([{"role": "user", "content": prompt}])  # type: ignore
-    
+
     if user.summary:
-        user.summary.summary = new_summary # type: ignore
+        user.summary.summary = new_summary  # type: ignore
         user.summary.updated_at = datetime.now(timezone.utc)  # type: ignore
     else:
         summary = Summary(user_id=user_id)  # type: ignore
         summary.summary = new_summary  # type: ignore
-        db.session.add(summary) # type: ignore
-    
+        db.session.add(summary)  # type: ignore
+
     db.session.commit()

@@ -12,7 +12,7 @@ from config import (
     ANALYSIS_FREQUENCY,
     RATE_LIMITS,
     ALLOWED_ORIGINS,
-    CHAT_PROMPT_HEADER
+    CHAT_PROMPT_HEADER,
 )
 from auth import get_user_id
 from rate_limit import limiter
@@ -57,7 +57,11 @@ CORS(
 db.init_app(app)
 limiter.init_app(app)
 
-chat_ai = AI(model=MODELS["chat"], max_tokens=MAX_TOKENS["chat"], system_prompt=CHAT_PROMPT_HEADER)
+chat_ai = AI(
+    model=MODELS["chat"],
+    max_tokens=MAX_TOKENS["chat"],
+    system_prompt=CHAT_PROMPT_HEADER,
+)
 analysis_ai = AI(model=MODELS["analysis"], max_tokens=MAX_TOKENS["analysis"])
 
 
