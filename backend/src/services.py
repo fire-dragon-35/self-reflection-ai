@@ -1,6 +1,6 @@
 # backend/src/services.py
 
-from models import db, User, Context, Analysis
+from models import db, User, Context, Analysis, Summary
 from datetime import datetime, timezone
 from typing import cast
 from ai import AI

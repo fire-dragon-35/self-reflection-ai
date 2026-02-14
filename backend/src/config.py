@@ -3,8 +3,8 @@
 import os
 
 MODELS = {
-    "chat": "claude-sonnet-4-20250514",
-    "analysis": "claude-haiku-4-20250514",
+    "chat": "claude-sonnet-4-5-20250929",
+    "analysis": "claude-haiku-4-5-20251001",
 }
 
 MAX_TOKENS = {
@@ -77,4 +77,4 @@ ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
 if FLASK_ENV == "production":
-    ALLOWED_ORIGINS.append("https://reflektioner.vercel.app")
+    ALLOWED_ORIGINS.append("https://reflektion.vercel.app")
