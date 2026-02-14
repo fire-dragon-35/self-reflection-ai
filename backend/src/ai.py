@@ -15,13 +15,13 @@ def _log_token_count(
 ) -> None:
     try:
         count = client.messages.count_tokens(model=model, messages=messages)  # type: ignore
-        print(f"✨ Input tokens: {count.input_tokens}")  # type: ignore
+        print(f"✨ Input tokens: {count.input_tokens}, model: {model}, messages: {messages}")  # type: ignore
     except Exception as e:
         print(f"Could not count tokens: {e}")
 
 
-def _log_usage(response: Any, model: str) -> None:
-    print(f"✨ Usage: {response.usage}, model: {model}")  # type: ignore
+def _log_usage(response: Any) -> None:
+    print(f"✨ Usage: {response.usage}")
 
 
 class AI:
