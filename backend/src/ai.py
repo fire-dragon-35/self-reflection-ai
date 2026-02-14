@@ -2,9 +2,9 @@
 
 from anthropic import Anthropic
 from anthropic.types import MessageParam
-import os
+from config import ANTHROPIC_API_KEY
 
-client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
 
 class AI:

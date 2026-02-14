@@ -4,11 +4,11 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timezone
 from cryptography.fernet import Fernet
 from typing import TypedDict, cast
-import os
+from config import ENCRYPTION_KEY
 import json
 
 
-# types
+# data types
 class BigFiveDict(TypedDict):
     openness: float
     conscientiousness: float
@@ -32,8 +32,9 @@ class AnalysisDict(TypedDict):
 
 db = SQLAlchemy()
 
-ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY", Fernet.generate_key())
-cipher = Fernet(ENCRYPTION_KEY)
+if not ENCRYPTION_KEY:
+    raise RuntimeError("ENCRYPTION_KEY is not set in environment variables")
+cipher = Fernet(ENCRYPTION_KEY.encode())
 
 
 def encrypt(data: str) -> str:

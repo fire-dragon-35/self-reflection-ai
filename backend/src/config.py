@@ -19,6 +19,8 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY")
 SENTRY_DSN = os.getenv("SENTRY_DSN")
 FLASK_ENV = os.getenv("FLASK_ENV", "development")
+ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 BIG_FIVE_PROMPT_HEADER = f"""Analyze this conversation and determine the user's Big Five personality traits.
 Return ONLY valid JSON with this exact structure:
@@ -45,11 +47,9 @@ RATE_LIMITS = {
     "delete": "2 per day",
 }
 
-FRONTEND_URL = "http://localhost:5173"
-
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
 ]
 if FLASK_ENV == "production":
-    ALLOWED_ORIGINS.append("https://yourapp.vercel.app")
+    ALLOWED_ORIGINS.append("https://reflektioner.vercel.app")
