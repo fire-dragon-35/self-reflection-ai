@@ -26,5 +26,5 @@ def get_user_id() -> str | None:
         return user_id
 
     except Exception as e:
-        print(f"Auth error: {e}")
+        print(f"❌ Auth error: {e}")
         return None

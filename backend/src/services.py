@@ -62,12 +62,20 @@ def save_context_to_db(user_id: str, history: Messages) -> None:
 
 def _clean(text: str) -> str:
     # clean json response from code block formatting if present
-    return text.replace("```json", "").replace("```", "").strip()
+    text = text.replace("```json", "").replace("```", "").strip()
+
+    # terrible solution for now...
+    start = text.find("{")
+    end = text.rfind("}")
+
+    if start != -1 and end != -1:
+        return text[start : end + 1]
+
+    return text
 
 
 def analyse_user_conversation(user_id: str, analysis_ai: AI) -> Analysis | None:
     history = load_user_context(user_id)
-
     if len(history) < 6:
         return None
 
@@ -79,7 +87,6 @@ def analyse_user_conversation(user_id: str, analysis_ai: AI) -> Analysis | None:
     attachment_prompt = (
         ATTACHMENT_STYLE_PROMPT_HEADER + "\n\nConversation:\n" + conversation
     )
-
     try:
         big_five_text = _clean(
             analysis_ai.ask([{"role": "user", "content": big_five_prompt}])
@@ -93,14 +100,13 @@ def analyse_user_conversation(user_id: str, analysis_ai: AI) -> Analysis | None:
         analysis = Analysis(user_id=user_id)  # type: ignore
         analysis.big_five_personality = big_five_data
         analysis.attachment_style = attachment_data
-
         db.session.add(analysis)
         db.session.commit()
 
         return analysis
 
     except Exception as e:
-        print(f"Analysis error: {e}")
+        print(f"❌ Analysis error: {e}")
         return None
 
 

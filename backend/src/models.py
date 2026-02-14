@@ -89,7 +89,10 @@ class Analysis(db.Model):
     big_five_personality_encrypted = db.Column(db.Text)
     attachment_style_encrypted = db.Column(db.Text)
     timestamp = db.Column(
-        db.DateTime, default=lambda: datetime.now(timezone.utc), index=True
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        index=True,
     )
 
     @property
