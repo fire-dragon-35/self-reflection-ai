@@ -51,7 +51,7 @@ class AI:
 
         response = self.client.messages.create(**kwargs)  # type: ignore
         if IS_DEV:
-            _log_usage(response, self.model)  # type: ignore
+            _log_usage(response)  # type: ignore
 
         first_block = response.content[0]  # type: ignore
         if first_block.type == "text":  # type: ignore
