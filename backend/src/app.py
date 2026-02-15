@@ -34,6 +34,7 @@ Endpoints:
 - GET /health
 - POST /api/chat
 - GET /api/messages
+- DELETE /api/messages
 - GET /api/analysis
 - POST /api/analyse
 - DELETE /api/user
@@ -89,6 +90,8 @@ def chat():
 
     history.append({"role": "user", "content": message_content})
     response_text = chat_ai.ask(history)  # type: ignore
+    if not response_text:
+        response_text = "Sorry, I couldn't generate a response right now."
     history.append({"role": "assistant", "content": response_text})
 
     if len(history) > MAX_CONTEXT_MESSAGES:
@@ -116,6 +119,26 @@ def get_messages():
 
     history = load_user_context(user_id)
     return jsonify({"messages": history})
+
+
+@app.route("/api/messages", methods=["DELETE"])
+@limiter.limit(RATE_LIMITS["delete"])
+def clear_messages():
+    user_id = get_user_id()
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    # clear from cache
+    if user_id in user_sessions:
+        user_sessions[user_id] = []
+
+    # clear from database
+    user = cast(User | None, User.query.filter_by(user_id=user_id).first())
+    if user and user.context:
+        db.session.delete(user.context)
+        db.session.commit()
+
+    return jsonify({"message": "Chat history cleared"})
 
 
 @app.route("/api/analysis", methods=["GET"])

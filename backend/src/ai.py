@@ -12,12 +12,14 @@ IS_DEV = os.getenv("FLASK_ENV") == "development"
 
 def _log_token_count(
     client: Anthropic, model: str, messages: list[MessageParam]
-) -> None:
+) -> int | None:
     try:
         count = client.messages.count_tokens(model=model, messages=messages)  # type: ignore
-        print(f"✨ Input tokens: {count.input_tokens}, model: {model}, messages: {messages}")  # type: ignore
+        print(f"✨ Input tokens: {count.input_tokens}, model: {model}")  # type: ignore
+        return count.input_tokens
     except Exception as e:
         print(f"Could not count tokens: {e}")
+        return None
 
 
 def _log_usage(response: Any) -> None:
@@ -49,7 +51,12 @@ class AI:
         if self.system_prompt:
             kwargs["system"] = self.system_prompt  # type: ignore
 
-        response = self.client.messages.create(**kwargs)  # type: ignore
+        try:
+            response = self.client.messages.create(**kwargs)  # type: ignore
+        except Exception as e:
+            print(f"❌ AI request error: {e}")
+            return ""
+
         if IS_DEV:
             _log_usage(response)  # type: ignore
 

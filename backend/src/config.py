@@ -67,7 +67,7 @@ Your role is to help me understand myself better, not to make me feel better.
 
 RATE_LIMITS = {
     "chat": "30 per hour",
-    "analysis": "5 per hour",
+    "analysis": "50 per hour",
     "read": "100 per hour",
     "delete": "2 per day",
 }
