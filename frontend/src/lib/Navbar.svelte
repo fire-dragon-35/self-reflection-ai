@@ -26,7 +26,6 @@
     if (token) {
       usage = await getUsage(token);
       
-      // Trigger animation
       animating = true;
       setTimeout(() => animating = false, 300);
     }
