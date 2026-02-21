@@ -17,14 +17,13 @@ MAX_CONTEXT = 10  # user messages
 MIN_ANALYSIS_CONTEXT = 5  # user messages
 
 DATABASE_URI = os.getenv("DATABASE_URI", "sqlite:///reflektion.db")
-SENTRY_DSN = os.getenv("SENTRY_DSN")
-FLASK_ENV = os.getenv("FLASK_ENV", "development")
-ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 CLERK_DOMAIN = os.getenv("CLERK_DOMAIN")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
-
+FLASK_ENV = os.getenv("FLASK_ENV", "development")
+ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY")
+SENTRY_DSN = os.getenv("SENTRY_DSN")
 
 BIG_FIVE_PROMPT_HEADER = f"""
 Analyse this conversation and determine the user's Big Five personality traits.
@@ -78,16 +77,15 @@ RATE_LIMITS = {
     "delete": "20 per hour",
 }
 TOKEN_PACKAGES: dict[str, dict[str, Any]] = {
-    "small": {"tokens": 200000, "price": 2.99, "price_id": "price_xxx"},
-    "medium": {"tokens": 500000, "price": 4.99, "price_id": "price_xxx"},
-    "large": {"tokens": 1000000, "price": 8.99, "price_id": "price_xxx"},
+    "small": {"tokens": 200000, "price": 2.99, "price_id": "price_1T3KMFD57iw5zYt253WDgE1I"},
+    "medium": {"tokens": 500000, "price": 4.99, "price_id": "price_1T3KMmD57iw5zYt203GSmE9z"},
+    "large": {"tokens": 1000000, "price": 8.99, "price_id": "price_1T3KNUD57iw5zYt2gksBlvnf"},
 }
 
 FREE_TOKENS = 40000
 
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
-    "http://localhost:3000",
 ]
 if FLASK_ENV == "production":
     ALLOWED_ORIGINS.append("https://reflektion.vercel.app")
