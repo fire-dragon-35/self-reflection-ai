@@ -1,9 +1,9 @@
 # backend/src/services.py
 
-from models import db, User, Context, Analysis, Summary
+from src.models import db, User, Context, Analysis, Summary
 from datetime import datetime, timezone
-from ai import AI
-from config import (
+from src.ai import AI
+from src.config import (
     BIG_FIVE_PROMPT_HEADER,
     ATTACHMENT_STYLE_PROMPT_HEADER,
     SUMMARY_PROMPT_HEADER,

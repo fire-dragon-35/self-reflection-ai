@@ -2,8 +2,8 @@
 
 from models import db
 from datetime import datetime, timezone
-from config import FREE_TOKENS
-from services import get_or_create_user
+from src.config import FREE_TOKENS
+from src.services import get_or_create_user
 
 # cache
 used_tokens_cache: dict[str, int] = {}

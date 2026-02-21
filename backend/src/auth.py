@@ -1,7 +1,7 @@
 from flask import request
 import jwt
 from jwt import PyJWKClient
-from config import CLERK_DOMAIN
+from src.config import CLERK_DOMAIN
 
 JWKS_URL = f"{CLERK_DOMAIN}/.well-known/jwks.json"
 

@@ -5,9 +5,9 @@ load_dotenv()
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from models import db, Analysis
-from ai import AI
-from config import (
+from src.models import db, Analysis
+from src.ai import AI
+from src.config import (
     MODELS,
     MAX_TOKENS,
     DATABASE_URI,
@@ -18,9 +18,9 @@ from config import (
     STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET,
 )
-from auth import get_user_id
-from rate_limit import limiter
-from services import (
+from src.auth import get_user_id
+from src.rate_limit import limiter
+from src.services import (
     load_user_chat_history,
     save_context_to_db,
     analyse_user_conversation,
@@ -28,7 +28,7 @@ from services import (
     user_sessions,
     get_or_create_user,
 )
-from usage import check_token_limit, use_tokens, get_user_usage, add_purchased_tokens
+from src.usage import check_token_limit, use_tokens, get_user_usage, add_purchased_tokens
 from typing import cast
 import stripe
 

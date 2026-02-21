@@ -2,7 +2,7 @@
 
 from anthropic import Anthropic
 from anthropic.types import MessageParam
-from config import ANTHROPIC_API_KEY
+from src.config import ANTHROPIC_API_KEY
 from typing import Sequence
 
 client = Anthropic(api_key=ANTHROPIC_API_KEY)

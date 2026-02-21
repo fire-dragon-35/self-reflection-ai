@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timezone
 from cryptography.fernet import Fernet
 from typing import TypedDict, cast
-from config import ENCRYPTION_KEY, FREE_TOKENS
+from src.config import ENCRYPTION_KEY, FREE_TOKENS
 import json
 
 

@@ -3,7 +3,7 @@
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 from flask import Flask
-from config import SENTRY_DSN, FLASK_ENV
+from src.config import SENTRY_DSN, FLASK_ENV
 
 
 def init_logging(app: Flask) -> None:
