@@ -86,6 +86,5 @@ FREE_TOKENS = 40000
 
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "https://reflektion-pi.vercel.app"
 ]
-if FLASK_ENV == "production":
-    ALLOWED_ORIGINS.append("https://reflektion-pi.vercel.app")
