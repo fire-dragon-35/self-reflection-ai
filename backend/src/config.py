@@ -16,14 +16,12 @@ MAX_TOKENS = {
 MAX_CONTEXT = 10  # user messages
 MIN_ANALYSIS_CONTEXT = 5  # user messages
 
-def process_db_uri(db_uri: str) -> str:
-    if db_uri.startswith("postgresql://"):
-        db_uri = db_uri.replace("postgresql://", "postgres://", 1)
+def add_sslmode(db_uri: str) -> str:
     if "sslmode" not in db_uri:
         db_uri += "?sslmode=require"
     return db_uri
 
-DATABASE_URI = process_db_uri(os.getenv("DATABASE_URI", "sqlite:///reflektion.db"))
+DATABASE_URI = add_sslmode(os.getenv("DATABASE_URI", "sqlite:///reflektion.db"))
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 CLERK_DOMAIN = os.getenv("CLERK_DOMAIN")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
