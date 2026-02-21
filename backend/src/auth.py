@@ -1,6 +1,5 @@
 from flask import request
 import jwt
-from jwt import PyJWKClient
 from src.config import CLERK_DOMAIN
 
 JWKS_URL = f"{CLERK_DOMAIN}/.well-known/jwks.json"
@@ -14,7 +13,7 @@ def get_user_id() -> str | None:
     token = auth_header.replace("Bearer ", "")
 
     try:
-        jwks_client = PyJWKClient(JWKS_URL)
+        jwks_client = jwt.PyJWKClient(JWKS_URL)
         signing_key = jwks_client.get_signing_key_from_jwt(token)
 
         # verify and decode the token
