@@ -21,7 +21,7 @@ def add_sslmode(db_uri: str) -> str:
         db_uri += "?sslmode=require"
     return db_uri
 
-DATABASE_URI = add_sslmode(os.getenv("DATABASE_URI", "sqlite:///reflektion.db"))
+DATABASE_URI: str = add_sslmode(os.getenv("DATABASE_URI", "sqlite:///reflektion.db"))
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 CLERK_DOMAIN = os.getenv("CLERK_DOMAIN")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
