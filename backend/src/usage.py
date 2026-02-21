@@ -1,6 +1,6 @@
 # backend/src/usage.py
 
-from models import db
+from src.models import db
 from datetime import datetime, timezone
 from src.config import FREE_TOKENS
 from src.services import get_or_create_user
