@@ -98,7 +98,6 @@
 
 <main class="max-w-7xl mx-auto p-6">
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Chat (2/3) -->
     <div class="lg:col-span-2">
       <div class="card h-[600px] flex flex-col">
         <div class="flex-1 overflow-y-auto scrollbar-hide relative" bind:this={messagesContainer}>
@@ -149,8 +148,7 @@
         </div>
       </div>
     </div>
-    
-    <!-- Insights (1/3) -->
+
     <div>
       <div class="card h-[600px] flex flex-col relative">
         <div class="flex items-center justify-between mb-6">
