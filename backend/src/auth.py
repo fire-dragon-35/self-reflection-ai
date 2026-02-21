@@ -25,6 +25,5 @@ def get_user_id() -> str | None:
         user_id = decoded.get("sub")
         return user_id
 
-    except Exception as e:
-        print(f"❌ Auth error: {e}")
+    except Exception:
         return None

@@ -9,29 +9,26 @@ export interface ApiError {
   status?: number;
 }
 
+interface ErrorResponse {
+  error?: string;
+}
+
 export function handleApiError(error: unknown): ApiError {
   if (axios.isAxiosError(error)) {
-    const axiosError = error as AxiosError;
+    const axiosError = error as AxiosError<ErrorResponse>;
     
-    if (axiosError.response?.status === 429) {
-      return { 
-        message: 'Rate limit exceeded.',
-        status: 429 
+    // use backend error message if available
+    const backendMessage = axiosError.response?.data?.error;
+    if (backendMessage) {
+      return {
+        message: backendMessage,
+        status: axiosError.response?.status
       };
     }
     
-    if (axiosError.response?.status === 400) {
-      return { 
-        message: 'Not enough conversation data. Send more messages first.',
-        status: 400 
-      };
-    }
-    
+    // fallback for errors without backend message
     if (axiosError.response?.status === 401) {
-      return { 
-        message: 'Please sign in again.',
-        status: 401 
-      };
+      return { message: 'Please sign in again.', status: 401 };
     }
     
     return { 
@@ -43,14 +40,14 @@ export function handleApiError(error: unknown): ApiError {
   return { message: 'Network error. Please check your connection.' };
 }
 
-export async function getMessages(token: string) {
-  const res = await axios.get(`${API_URL}/api/messages`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  return res.data.messages || [];
+// GET /health
+export async function getHealth() {
+  const res = await axios.get(`${API_URL}/health`);
+  return res.data;
 }
 
-export async function sendChat(token: string, message: string) {
+// POST /api/chat
+export async function postChat(token: string, message: string) {
   const res = await axios.post(`${API_URL}/api/chat`, 
     { message },
     { headers: { Authorization: `Bearer ${token}` } }
@@ -58,25 +55,61 @@ export async function sendChat(token: string, message: string) {
   return res.data.response;
 }
 
+// GET /api/messages
+export async function getMessages(token: string) {
+  const res = await axios.get(`${API_URL}/api/messages`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return res.data.messages || [];
+}
+
+// DELETE /api/data
+export async function deleteData(token: string) {
+  await axios.delete(`${API_URL}/api/data`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
+// GET /api/analysis
 export async function getAnalysis(token: string) {
   const res = await axios.get(`${API_URL}/api/analysis`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  return res.data.analysis[0];
+  return res.data.analysis || [];
 }
 
-export async function triggerAnalysisAPI(token: string) {
+// POST /api/analyse
+export async function postAnalyse(token: string) {
   const res = await axios.post(`${API_URL}/api/analyse`, {}, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  return res.data.analysis;
+  return {
+    analysis: res.data.analysis,
+    summary: res.data.summary
+  };
 }
 
-export async function clearMessages(token: string) {
-  const res = await axios.delete(`${API_URL}/api/messages`, {
+// DELETE /api/user
+export async function deleteUser(token: string) {
+  await axios.delete(`${API_URL}/api/user`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  return res.data.message;
+}
+
+// GET /api/usage
+export async function getUsage(token: string) {
+  const res = await axios.get(`${API_URL}/api/usage`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return res.data;
+}
+
+// GET /api/summary
+export async function getSummary(token: string) {
+  const res = await axios.get(`${API_URL}/api/summary`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return res.data.summary || null;
 }
 
 export { API_URL };

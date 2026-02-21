@@ -3,6 +3,7 @@
 from dotenv import load_dotenv
 
 load_dotenv()
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from models import db, User, Analysis
@@ -11,8 +12,7 @@ from config import (
     MODELS,
     MAX_TOKENS,
     DATABASE_URI,
-    MAX_CONTEXT_MESSAGES,
-    ANALYSIS_FREQUENCY,
+    MAX_CONTEXT,
     RATE_LIMITS,
     ALLOWED_ORIGINS,
     CHAT_PROMPT_HEADER,
@@ -20,25 +20,26 @@ from config import (
 from auth import get_user_id
 from rate_limit import limiter
 from services import (
-    load_user_context,
+    load_user_chat_history,
     save_context_to_db,
     analyse_user_conversation,
-    clear_user_cache,
     update_user_summary,
     user_sessions,
 )
 from typing import cast
+from usage import check_token_limit, add_tokens, get_user_usage
 
 """
 Endpoints:
 - GET /health
 - POST /api/chat
 - GET /api/messages
-- DELETE /api/messages
+- DELETE /api/data
 - GET /api/analysis
 - POST /api/analyse
 - DELETE /api/user
-- DELETE /api/data
+- GET /api/usage
+- GET /api/summary
 """
 
 app = Flask(__name__)
@@ -55,17 +56,20 @@ CORS(
         }
     },
 )
+
 db.init_app(app)
 limiter.init_app(app)
 
+# get user tier here and select accordingly
 chat_ai = AI(
-    model=MODELS["chat"],
+    model=MODELS["sonnet"],
     max_tokens=MAX_TOKENS["chat"],
-    system_prompt=CHAT_PROMPT_HEADER,
+    system_prompt=CHAT_PROMPT_HEADER,  # this header is fixed
 )
-analysis_ai = AI(model=MODELS["analysis"], max_tokens=MAX_TOKENS["analysis"])
+analysis_ai = AI(model=MODELS["haiku"], max_tokens=MAX_TOKENS["analysis"])
 
 
+#### endpoints ####
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "OK"})
@@ -73,10 +77,15 @@ def health():
 
 @app.route("/api/chat", methods=["POST"])
 @limiter.limit(RATE_LIMITS["chat"])
-def chat():
+def post_chat():
+    # authentication
     user_id = get_user_id()
     if not user_id:
         return jsonify({"error": "Unauthorized"}), 401
+
+    # check tokens
+    if not check_token_limit(user_id):
+        return jsonify({"error": "Token limit reached"}), 429
 
     data = request.get_json()
     if not data or "message" not in data:
@@ -86,26 +95,23 @@ def chat():
     if not message_content:
         return jsonify({"error": "Message cannot be empty"}), 400
 
-    history = load_user_context(user_id)
+    chat_history = load_user_chat_history(user_id)
+    chat_history.append({"role": "user", "content": message_content})
 
-    history.append({"role": "user", "content": message_content})
-    response_text = chat_ai.ask(history)  # type: ignore
+    response_text, tokens = chat_ai.ask(chat_history)  # type: ignore
     if not response_text:
         response_text = "Sorry, I couldn't generate a response right now."
-    history.append({"role": "assistant", "content": response_text})
 
-    if len(history) > MAX_CONTEXT_MESSAGES:
-        history = history[-MAX_CONTEXT_MESSAGES:]
+    chat_history.append({"role": "assistant", "content": response_text})
+
+    add_tokens(user_id, tokens)
+
+    if len(chat_history) > MAX_CONTEXT:
+        chat_history = chat_history[-MAX_CONTEXT:]
 
     # save to cache and database
-    user_sessions[user_id] = history
-    save_context_to_db(user_id, history)
-
-    # analyse every N messages
-    user_message_count = sum(1 for m in history if m["role"] == "user")
-    if user_message_count % ANALYSIS_FREQUENCY == 0:
-        analyse_user_conversation(user_id, analysis_ai)
-        update_user_summary(user_id, analysis_ai)
+    user_sessions[user_id] = chat_history
+    save_context_to_db(user_id, chat_history)
 
     return jsonify({"response": response_text})
 
@@ -113,42 +119,50 @@ def chat():
 @app.route("/api/messages", methods=["GET"])
 @limiter.limit(RATE_LIMITS["read"])
 def get_messages():
+    # authentication
     user_id = get_user_id()
     if not user_id:
         return jsonify({"error": "Unauthorized"}), 401
 
-    history = load_user_context(user_id)
-    return jsonify({"messages": history})
+    chat_history = load_user_chat_history(user_id)
+    return jsonify({"messages": chat_history})
 
 
-@app.route("/api/messages", methods=["DELETE"])
+@app.route("/api/data", methods=["DELETE"])
 @limiter.limit(RATE_LIMITS["delete"])
-def clear_messages():
+def delete_data():
+    # authentication
     user_id = get_user_id()
     if not user_id:
         return jsonify({"error": "Unauthorized"}), 401
 
     # clear from cache
     if user_id in user_sessions:
-        user_sessions[user_id] = []
+        user_sessions.pop(user_id, None)
 
     # clear from database
     user = cast(User | None, User.query.filter_by(user_id=user_id).first())
-    if user and user.context:
-        db.session.delete(user.context)
+    if user:
+        if user.context:
+            db.session.delete(user.context)
+        if user.summary:
+            db.session.delete(user.summary)
+
+        Analysis.query.filter_by(user_id=user_id).delete()
         db.session.commit()
 
-    return jsonify({"message": "Chat history cleared"})
+    return jsonify({"status": "User data deleted"})
 
 
 @app.route("/api/analysis", methods=["GET"])
 @limiter.limit(RATE_LIMITS["read"])
 def get_analysis():
+    # authentication
     user_id = get_user_id()
     if not user_id:
         return jsonify({"error": "Unauthorized"}), 401
 
-    analyses = cast(
+    analysis = cast(
         list[Analysis],
         Analysis.query.filter_by(user_id=user_id)
         .order_by(Analysis.timestamp.desc())
@@ -156,61 +170,80 @@ def get_analysis():
         .all(),
     )
 
-    return jsonify({"analysis": [a.to_dict() for a in analyses]})
+    return jsonify({"analysis": [a.to_dict() for a in analysis]})
 
 
+# expensive endpoint
 @app.route("/api/analyse", methods=["POST"])
 @limiter.limit(RATE_LIMITS["analysis"])
-def trigger_analysis():
+def post_analyse():
+    # authentication
     user_id = get_user_id()
     if not user_id:
         return jsonify({"error": "Unauthorized"}), 401
 
-    analysis = analyse_user_conversation(user_id, analysis_ai)
+    if not check_token_limit(user_id):
+        return jsonify({"error": "Token limit reached"}), 429
 
-    if analysis:
-        return jsonify({"message": "Analysis complete", "analysis": analysis.to_dict()})
-    else:
+    analysis, analysis_tokens = analyse_user_conversation(user_id, analysis_ai)
+
+    if not analysis:
         return jsonify({"error": "Not enough conversation data"}), 400
+
+    summary, summary_tokens = update_user_summary(user_id, analysis_ai)
+
+    total_tokens = analysis_tokens + summary_tokens
+    add_tokens(user_id, total_tokens)
+
+    return jsonify({"analysis": analysis.to_dict(), "summary": summary})
 
 
 @app.route("/api/user", methods=["DELETE"])
 @limiter.limit(RATE_LIMITS["delete"])
 def delete_user():
+    # authentication
     user_id = get_user_id()
     if not user_id:
         return jsonify({"error": "Unauthorized"}), 401
 
+    # clear from catch
+    if user_id in user_sessions:
+        user_sessions.pop(user_id, None)
+
+    # clear from database
     user = cast(User | None, User.query.filter_by(user_id=user_id).first())
     if user:
-        clear_user_cache(user_id)
         db.session.delete(user)
         db.session.commit()
-        return jsonify({"message": "User deleted"})
 
-    return jsonify({"message": "No data found"})
+    return jsonify({"status": "User deleted"})
 
 
-@app.route("/api/data", methods=["DELETE"])
-@limiter.limit(RATE_LIMITS["delete"])
-def clear_data():
+@app.route("/api/usage", methods=["GET"])
+@limiter.limit(RATE_LIMITS["read"])
+def get_usage():
+    # authentication
+    user_id = get_user_id()
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    usage = get_user_usage(user_id)
+    return jsonify(usage)
+
+
+@app.route("/api/summary", methods=["GET"])
+@limiter.limit(RATE_LIMITS["read"])
+def get_summary():
+    # authentication
     user_id = get_user_id()
     if not user_id:
         return jsonify({"error": "Unauthorized"}), 401
 
     user = cast(User | None, User.query.filter_by(user_id=user_id).first())
-    if user:
-        clear_user_cache(user_id)
+    if not user or not user.summary:
+        return jsonify({"summary": None})
 
-        if user.context:
-            db.session.delete(user.context)
-
-        Analysis.query.filter_by(user_id=user_id).delete()
-        db.session.commit()
-
-        return jsonify({"message": "User data cleared"})
-
-    return jsonify({"message": "No data found"})
+    return jsonify({"summary": user.summary.summary})
 
 
 if __name__ == "__main__":

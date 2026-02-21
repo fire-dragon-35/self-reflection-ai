@@ -46,11 +46,20 @@ def decrypt(data: str) -> str:
 
 
 class User(db.Model):
+    __tablename__ = "user"
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String(100), unique=True, nullable=False)
+    user_id = db.Column(db.String(100), unique=True, nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    # relationships
+    # token tracking
+    tier = db.Column(db.String(20), default="free", nullable=False)
+    tokens_used = db.Column(db.Integer, default=0, nullable=False)
+    tokens_reset_date = db.Column(
+        db.Date, default=lambda: datetime.now(timezone.utc).date(), nullable=False
+    )
+
+    # Relationships
     context = db.relationship(
         "Context", backref="user", uselist=False, cascade="all, delete-orphan"
     )
@@ -63,6 +72,8 @@ class User(db.Model):
 
 
 class Context(db.Model):
+    __tablename__ = "context"
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(
         db.String(100), db.ForeignKey("user.user_id"), nullable=False, unique=True
@@ -71,7 +82,7 @@ class Context(db.Model):
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     @property
-    def messages(self):
+    def messages(self) -> list[dict[str, str]]:
         decrypted = decrypt(self.messages_encrypted)
         return json.loads(decrypted)
 
@@ -82,6 +93,8 @@ class Context(db.Model):
 
 
 class Analysis(db.Model):
+    __tablename__ = "analysis"
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(
         db.String(100), db.ForeignKey("user.user_id"), nullable=False, index=True
@@ -135,14 +148,13 @@ class Analysis(db.Model):
 
 
 class Summary(db.Model):
-    # rolling summary of conversation
+    __tablename__ = "summary"
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(
         db.String(100), db.ForeignKey("user.user_id"), nullable=False, unique=True
     )
-
     summary_encrypted = db.Column(db.Text, nullable=False)
-
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     @property

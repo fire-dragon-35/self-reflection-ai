@@ -2,26 +2,27 @@
 
 from models import db, User, Context, Analysis, Summary
 from datetime import datetime, timezone
-from typing import cast
 from ai import AI
 from config import (
     BIG_FIVE_PROMPT_HEADER,
     ATTACHMENT_STYLE_PROMPT_HEADER,
     SUMMARY_PROMPT_HEADER,
+    MIN_ANALYSIS_CONTEXT,
 )
 import json
+from typing import cast
 
 """
-Services here:
-- load_user_context
+Functions:
+- load_user_chat_history
 - save_context_to_db
 - analyse_user_conversation
-- clear_user_cache
+- update_user_summary
+- user_sessions (cache)
 """
 
-# define types
-Messages = list[dict[str, str]]
-user_sessions: dict[str, Messages] = {}
+# cache
+user_sessions: dict[str, list[dict[str, str]]] = {}
 
 
 def _get_or_create_user(user_id: str) -> User:
@@ -33,114 +34,135 @@ def _get_or_create_user(user_id: str) -> User:
     return user
 
 
-def load_user_context(user_id: str) -> Messages:
+def load_user_chat_history(user_id: str) -> list[dict[str, str]]:
     if user_id in user_sessions:
         return user_sessions[user_id]
 
     user = _get_or_create_user(user_id)
-    history: Messages = []
+    chat_history: list[dict[str, str]] = []
     if user.context:
-        history = user.context.messages.copy()
+        chat_history = user.context.messages.copy()
 
-    user_sessions[user_id] = history
-    return history
+    user_sessions[user_id] = chat_history
+    return chat_history
 
 
-def save_context_to_db(user_id: str, history: Messages) -> None:
+def save_context_to_db(user_id: str, chat_history: list[dict[str, str]]) -> None:
     user = _get_or_create_user(user_id)
 
     if user.context:
-        user.context.messages = history  # type: ignore
+        user.context.messages = chat_history  # type: ignore
         user.context.updated_at = datetime.now(timezone.utc)  # type: ignore
     else:
-        context = Context(user_id=user_id)  # type: ignore
-        context.messages = history
+        context = Context(user_id=user_id, messages=chat_history)  # type: ignore
         db.session.add(context)
 
     db.session.commit()
 
 
-def _clean(text: str) -> str:
-    # clean json response from code block formatting if present
+def _clean_json_response(text: str) -> str:
     text = text.replace("```json", "").replace("```", "").strip()
-
-    # terrible solution for now...
     start = text.find("{")
     end = text.rfind("}")
-
-    if start != -1 and end != -1:
-        return text[start : end + 1]
-
-    return text
+    return text[start : end + 1] if start != -1 and end != -1 else text
 
 
-def analyse_user_conversation(user_id: str, analysis_ai: AI) -> Analysis | None:
-    history = load_user_context(user_id)
-    if len(history) < 6:
-        return None
+def analyse_user_conversation(
+    user_id: str, analysis_ai: AI
+) -> tuple[Analysis | None, int]:
+    chat_history = load_user_chat_history(user_id)
 
-    conversation = "\n\n".join(
-        [f"{m['role'].title()}: {m['content']}" for m in history]
+    if len(chat_history) < MIN_ANALYSIS_CONTEXT:
+        return None, 0
+
+    user = _get_or_create_user(user_id)
+    existing_summary = ""
+    if user.summary:
+        existing_summary = (
+            f"\n\nPrevious conversation summary:\n{user.summary.summary}\n\n"
+        )
+
+    recent_conversation = "\n\n".join(
+        [f"{m['role'].title()}: {m['content']}" for m in chat_history]
     )
 
-    big_five_prompt = BIG_FIVE_PROMPT_HEADER + "\n\nConversation:\n" + conversation
+    big_five_prompt = (
+        BIG_FIVE_PROMPT_HEADER
+        + existing_summary
+        + "Recent conversation:\n"
+        + recent_conversation
+    )
     attachment_prompt = (
-        ATTACHMENT_STYLE_PROMPT_HEADER + "\n\nConversation:\n" + conversation
+        ATTACHMENT_STYLE_PROMPT_HEADER
+        + existing_summary
+        + "Recent conversation:\n"
+        + recent_conversation
     )
+
+    total_tokens = 0
+
     try:
-        big_five_text = _clean(
-            analysis_ai.ask([{"role": "user", "content": big_five_prompt}])
+        # big 5 analysis
+        big_five_text, tokens = analysis_ai.ask(
+            [{"role": "user", "content": big_five_prompt}]
         )
-        attachment_text = _clean(
-            analysis_ai.ask([{"role": "user", "content": attachment_prompt}])
+        big_five_text = _clean_json_response(big_five_text)
+        total_tokens += tokens
+
+        # attachment analysis
+        attachment_text, tokens = analysis_ai.ask(
+            [{"role": "user", "content": attachment_prompt}]
         )
+        attachment_text = _clean_json_response(attachment_text)
+        total_tokens += tokens
+
         big_five_data = json.loads(big_five_text)
         attachment_data = json.loads(attachment_text)
 
-        analysis = Analysis(user_id=user_id)  # type: ignore
-        analysis.big_five_personality = big_five_data
-        analysis.attachment_style = attachment_data
+        analysis = Analysis(
+            user_id=user_id,  # type: ignore
+            big_five_personality=big_five_data,  # type: ignore
+            attachment_style=attachment_data,  # type: ignore
+        )
         db.session.add(analysis)
         db.session.commit()
 
-        return analysis
+        return analysis, total_tokens
 
-    except Exception as e:
-        print(f"❌ Analysis error: {e}")
-        return None
-
-
-def clear_user_cache(user_id: str) -> None:
-    user_sessions.pop(user_id, None)
+    except Exception:
+        return None, 0
 
 
-def update_user_summary(user_id: str, analysis_ai: AI) -> None:
+def update_user_summary(user_id: str, analysis_ai: AI) -> tuple[str | None, int]:
     user = _get_or_create_user(user_id)
+    chat_history = load_user_chat_history(user_id)
 
-    recent_history = load_user_context(user_id)
+    if len(chat_history) < MIN_ANALYSIS_CONTEXT:
+        return None, 0
 
     existing_summary = ""
     if user.summary:
         existing_summary = user.summary.summary
 
-    conversation = "\n\n".join(
-        [f"{m['role'].title()}: {m['content']}" for m in recent_history]
+    recent_conversation = "\n\n".join(
+        [f"{m['role'].title()}: {m['content']}" for m in chat_history]
     )
 
     prompt = (
         SUMMARY_PROMPT_HEADER
         + f"\n\nPrevious summary:\n{existing_summary if existing_summary else 'None - this is the first summary.'}\n\n"
-        + f"Recent conversations:\n{conversation}"
+        + f"Recent conversations:\n{recent_conversation}"
     )
 
-    new_summary = analysis_ai.ask([{"role": "user", "content": prompt}])  # type: ignore
+    new_summary, tokens = analysis_ai.ask([{"role": "user", "content": prompt}])
 
     if user.summary:
         user.summary.summary = new_summary  # type: ignore
         user.summary.updated_at = datetime.now(timezone.utc)  # type: ignore
     else:
-        summary = Summary(user_id=user_id)  # type: ignore
-        summary.summary = new_summary  # type: ignore
-        db.session.add(summary)  # type: ignore
+        summary = Summary(user_id=user_id, summary=new_summary)  # type: ignore
+        db.session.add(summary)
 
     db.session.commit()
+
+    return new_summary, tokens

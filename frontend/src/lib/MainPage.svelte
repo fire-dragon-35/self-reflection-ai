@@ -1,8 +1,18 @@
 <script lang="ts">
   import { useClerkContext } from 'svelte-clerk/client';
   import { onMount, afterUpdate } from 'svelte';
-  import { getMessages, sendChat, getAnalysis, triggerAnalysisAPI, clearMessages, handleApiError } from './api';
+  import { 
+    getMessages, 
+    postChat, 
+    getAnalysis, 
+    postAnalyse, 
+    deleteData, 
+    getSummary,
+    handleApiError 
+  } from './api';
   import { marked } from 'marked';
+
+  export let navbarRef: any;
   
   const ctx = useClerkContext();
   
@@ -11,7 +21,7 @@
     gfm: true,
   });
   
-  // Chat state
+  // chat state
   let message = '';
   let messages: Array<{role: string, content: string}> = [];
   let loading = false;
@@ -19,8 +29,9 @@
   let chatError = '';
   let messagesContainer: HTMLElement;
   
-  // Insights state
+  // insights state
   let analysis: any = null;
+  let summary: string | null = null;
   let analyzing = false;
   let insightsError = '';
   
@@ -35,7 +46,14 @@
     if (!token) return;
     
     messages = await getMessages(token);
-    analysis = await getAnalysis(token);
+    const analysisData = await getAnalysis(token);
+    if (analysisData && analysisData.length > 0) {
+      analysis = analysisData[0];
+    }
+    const summaryData = await getSummary(token);
+    if (summaryData) {
+      summary = summaryData;
+    }
   });
   
   async function sendMessage() {
@@ -50,8 +68,9 @@
     
     try {
       const token = await ctx.session?.getToken();
-      const response = await sendChat(token, userMessage);
+      const response = await postChat(token, userMessage);
       messages = [...messages, { role: 'assistant', content: response }];
+      navbarRef?.refresh();
     } catch (err) {
       const apiError = handleApiError(err);
       chatError = apiError.message;
@@ -68,8 +87,11 @@
     chatError = '';
     try {
       const token = await ctx.session?.getToken();
-      await clearMessages(token);
+      await deleteData(token);
       messages = [];
+      analysis = null;
+      summary = null;
+      navbarRef?.refresh();
     } catch (err) {
       const apiError = handleApiError(err);
       chatError = apiError.message;
@@ -83,7 +105,10 @@
     insightsError = '';
     try {
       const token = await ctx.session?.getToken();
-      analysis = await triggerAnalysisAPI(token);
+      const result = await postAnalyse(token);
+      analysis = result.analysis;
+      summary = result.summary;
+      navbarRef?.refresh();
     } catch (err) {
       const apiError = handleApiError(err);
       insightsError = apiError.message;
@@ -155,10 +180,16 @@
     </div>
     
     <!-- Insights (1/3) -->
-    <div>
-      <div class="card h-[600px] flex flex-col relative">
-        <h2 class="text-xl font-semibold mb-6">Your Insights</h2>
-
+<div>
+  <div class="card h-[600px] flex flex-col relative">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-xl font-semibold">Your Insights</h2>
+      {#if analysis?.timestamp}
+        <span class="text-xs text-gray-500">
+          {new Date(analysis.timestamp).toLocaleDateString()}
+        </span>
+      {/if}
+      </div>
         {#if insightsError}
           <div class="absolute top-16 left-4 right-4 bg-red-900/90 border border-red-800 rounded-lg p-3 z-20 animate-fade-in">
             <div class="flex items-start justify-between gap-2">
@@ -190,7 +221,7 @@
                       <div 
                         class="{score > 5 ? 'bg-blue-500' : 'bg-gray-600'} h-2 rounded-full" 
                         style="width: {score * 10}%"
-                      />
+                      ></div>
                     </div>
                   </div>
                 {/each}
@@ -198,12 +229,23 @@
             {/if}
             
             {#if analysis.attachment_style}
-              <div>
+              <div class="mb-6">
                 <h3 class="font-semibold mb-4">Attachment Style</h3>
                 <div class="bg-[#1a1f2e] border border-gray-700 rounded-lg p-4">
                   <p class="font-semibold mb-2">{analysis.attachment_style.style}</p>
                   <p class="text-sm text-gray-400">Anxiety: {analysis.attachment_style.anxiety_score}/10</p>
                   <p class="text-sm text-gray-400">Avoidance: {analysis.attachment_style.avoidance_score}/10</p>
+                </div>
+              </div>
+            {/if}
+            
+            {#if summary}
+              <div>
+                <h3 class="font-semibold mb-4">Summary</h3>
+                <div class="bg-[#1a1f2e] border border-gray-700 rounded-lg p-4">
+                  <div class="prose prose-invert prose-sm max-w-none">
+                    {@html marked(summary)}
+                  </div>
                 </div>
               </div>
             {/if}

@@ -3,27 +3,8 @@
 from anthropic import Anthropic
 from anthropic.types import MessageParam
 from config import ANTHROPIC_API_KEY
-from typing import Any
-import os
 
 client = Anthropic(api_key=ANTHROPIC_API_KEY)
-IS_DEV = os.getenv("FLASK_ENV") == "development"
-
-
-def _log_token_count(
-    client: Anthropic, model: str, messages: list[MessageParam]
-) -> int | None:
-    try:
-        count = client.messages.count_tokens(model=model, messages=messages)  # type: ignore
-        print(f"✨ Input tokens: {count.input_tokens}, model: {model}")  # type: ignore
-        return count.input_tokens
-    except Exception as e:
-        print(f"Could not count tokens: {e}")
-        return None
-
-
-def _log_usage(response: Any) -> None:
-    print(f"✨ Usage: {response.usage}")
 
 
 class AI:
@@ -38,10 +19,7 @@ class AI:
         self.max_tokens: int = max_tokens
         self.system_prompt: str | None = system_prompt
 
-    def ask(self, messages: list[MessageParam]) -> str:
-        if IS_DEV:
-            _log_token_count(self.client, self.model, messages)
-
+    def ask(self, messages: list[MessageParam]) -> tuple[str, int]:
         kwargs = {  # type: ignore
             "model": self.model,
             "max_tokens": self.max_tokens,
@@ -53,15 +31,14 @@ class AI:
 
         try:
             response = self.client.messages.create(**kwargs)  # type: ignore
-        except Exception as e:
-            print(f"❌ AI request error: {e}")
-            return ""
+        except Exception:
+            return "", 0
 
-        if IS_DEV:
-            _log_usage(response)  # type: ignore
+        total_tokens = 0
+        if hasattr(response, "usage"):  # type: ignore
+            total_tokens = response.usage.input_tokens + response.usage.output_tokens  # type: ignore
 
         first_block = response.content[0]  # type: ignore
         if first_block.type == "text":  # type: ignore
-            return first_block.text  # type: ignore
-
-        return str(first_block)  # type: ignore
+            return first_block.text, total_tokens  # type: ignore
+        return str(first_block), total_tokens  # type: ignore

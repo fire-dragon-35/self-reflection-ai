@@ -3,8 +3,8 @@
 import os
 
 MODELS = {
-    "chat": "claude-sonnet-4-5-20250929",
-    "analysis": "claude-haiku-4-5-20251001",
+    "sonnet": "claude-sonnet-4-5-20250929",
+    "haiku": "claude-haiku-4-5-20251001",
 }
 
 MAX_TOKENS = {
@@ -12,8 +12,8 @@ MAX_TOKENS = {
     "analysis": 500,
 }
 
-MAX_CONTEXT_MESSAGES = 20
-ANALYSIS_FREQUENCY = 5
+MAX_CONTEXT = 20  # user messages
+MIN_ANALYSIS_CONTEXT = 5  # user messages
 
 DATABASE_URI = os.getenv("DATABASE_URI", "sqlite:///reflektion.db")
 SENTRY_DSN = os.getenv("SENTRY_DSN")
@@ -49,7 +49,7 @@ You maintain a rolling summary of the user's conversations.
 Update the summary to include:
 - Main themes and recurring concerns
 - Progress or changes over time  
-- Important life events mentioned
+- Important events mentioned
 Keep it concise. Return ONLY the updated summary.
 """
 
@@ -65,11 +65,23 @@ Guidelines:
 Your role is to help me understand myself better, not to make me feel better.
 """
 
+# these are just for extra protection against spam
 RATE_LIMITS = {
-    "chat": "30 per hour",
-    "analysis": "50 per hour",
-    "read": "100 per hour",
-    "delete": "2 per day",
+    "chat": "50 per hour",
+    "analysis": "5 per hour",
+    "read": "500 per hour",
+    "delete": "5 per hour",
+}
+
+TIER_LIMITS = {  # type: ignore
+    "free": {
+        "tokens": 50000,
+        "chat_model": MODELS["haiku"],
+    },
+    "pro": {
+        "tokens": 30000,
+        "chat_model": MODELS["sonnet"],
+    },
 }
 
 ALLOWED_ORIGINS = [

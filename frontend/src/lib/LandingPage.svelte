@@ -14,7 +14,7 @@
       </p>
       <SignInButton mode="modal">
         <button class="btn-primary text-lg px-8 py-3">
-          Sign in
+          Try for free
         </button>
       </SignInButton>
     </div>
