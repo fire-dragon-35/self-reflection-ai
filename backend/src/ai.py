@@ -3,6 +3,7 @@
 from anthropic import Anthropic
 from anthropic.types import MessageParam
 from config import ANTHROPIC_API_KEY
+from typing import Sequence
 
 client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
@@ -19,7 +20,7 @@ class AI:
         self.max_tokens: int = max_tokens
         self.system_prompt: str | None = system_prompt
 
-    def ask(self, messages: list[MessageParam]) -> tuple[str, int]:
+    def ask(self, messages: Sequence[MessageParam]) -> tuple[str, int]:
         kwargs = {  # type: ignore
             "model": self.model,
             "max_tokens": self.max_tokens,

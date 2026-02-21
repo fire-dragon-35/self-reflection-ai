@@ -4,6 +4,7 @@
   import MainPage from './lib/MainPage.svelte';
   import Navbar from './lib/Navbar.svelte';
   import { dark } from '@clerk/themes';
+  import logo from './assets/logo.svg';
   
   const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
   const githubUrl = "https://github.com/fire-dragon-35/self-reflection-ai";
@@ -15,7 +16,12 @@
   <div class="min-h-screen bg-[#0a0e14] flex flex-col">
     <header class="bg-[#151a21] border-b border-gray-800">
       <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        <h1 class="text-xl font-semibold">Reflektion <span class="text-red-500 text-sm">Alpha</span></h1>
+        <div class="flex items-center gap-3">
+          <img src={logo} alt="Reflektion" class="w-8 h-8" />
+          <h1 class="text-xl font-semibold">
+            Reflektion <span class="text-red-500 text-xs italic" style="font-family: cursive;">Alpha</span>
+          </h1>
+        </div>
         
         <SignedIn>
           <Navbar bind:this={navbarRef} />

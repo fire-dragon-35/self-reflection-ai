@@ -112,4 +112,13 @@ export async function getSummary(token: string) {
   return res.data.summary || null;
 }
 
+// POST /api/create-checkout
+export async function postCreateCheckout(token: string, packageType: string) {
+  const res = await axios.post(`${API_URL}/api/create-checkout`, 
+    { packageType },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return res.data.url;
+}
+
 export { API_URL };

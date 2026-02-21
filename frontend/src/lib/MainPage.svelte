@@ -6,7 +6,6 @@
     postChat, 
     getAnalysis, 
     postAnalyse, 
-    deleteData, 
     getSummary,
     handleApiError 
   } from './api';
@@ -25,7 +24,6 @@
   let message = '';
   let messages: Array<{role: string, content: string}> = [];
   let loading = false;
-  let clearing = false;
   let chatError = '';
   let messagesContainer: HTMLElement;
   
@@ -80,26 +78,6 @@
     }
   }
   
-  async function handleClearMessages() {
-    if (!confirm('Are you sure you want to clear your chat history?')) return;
-    
-    clearing = true;
-    chatError = '';
-    try {
-      const token = await ctx.session?.getToken();
-      await deleteData(token);
-      messages = [];
-      analysis = null;
-      summary = null;
-      navbarRef?.refresh();
-    } catch (err) {
-      const apiError = handleApiError(err);
-      chatError = apiError.message;
-    } finally {
-      clearing = false;
-    }
-  }
-  
   async function triggerAnalysis() {
     analyzing = true;
     insightsError = '';
@@ -151,7 +129,7 @@
           </div>
         </div>
         
-        <div class="border-t border-gray-800 p-4 space-y-2">
+        <div class="border-t border-gray-800 p-4">
           <form on:submit|preventDefault={sendMessage} class="flex gap-2">
             <input
               type="text"
@@ -168,28 +146,22 @@
               Send
             </button>
           </form>
-          <button
-            on:click={handleClearMessages}
-            disabled={clearing || messages.length === 0}
-            class="w-full px-4 py-1.5 bg-gray-700/50 hover:bg-gray-600/50 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {clearing ? 'Clearing...' : 'Clear History'}
-          </button>
         </div>
       </div>
     </div>
     
     <!-- Insights (1/3) -->
-<div>
-  <div class="card h-[600px] flex flex-col relative">
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-xl font-semibold">Your Insights</h2>
-      {#if analysis?.timestamp}
-        <span class="text-xs text-gray-500">
-          {new Date(analysis.timestamp).toLocaleDateString()}
-        </span>
-      {/if}
-      </div>
+    <div>
+      <div class="card h-[600px] flex flex-col relative">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-semibold">Your Insights</h2>
+          {#if analysis?.timestamp}
+            <span class="text-xs text-gray-500">
+              {new Date(analysis.timestamp).toLocaleDateString()}
+            </span>
+          {/if}
+        </div>
+
         {#if insightsError}
           <div class="absolute top-16 left-4 right-4 bg-red-900/90 border border-red-800 rounded-lg p-3 z-20 animate-fade-in">
             <div class="flex items-start justify-between gap-2">

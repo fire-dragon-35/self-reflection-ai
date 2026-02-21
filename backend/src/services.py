@@ -8,24 +8,17 @@ from config import (
     ATTACHMENT_STYLE_PROMPT_HEADER,
     SUMMARY_PROMPT_HEADER,
     MIN_ANALYSIS_CONTEXT,
+    MAX_CONTEXT
 )
 import json
 from typing import cast
 
-"""
-Functions:
-- load_user_chat_history
-- save_context_to_db
-- analyse_user_conversation
-- update_user_summary
-- user_sessions (cache)
-"""
+Chat = list[dict[str, str]]
 
 # cache
-user_sessions: dict[str, list[dict[str, str]]] = {}
+user_sessions: dict[str, Chat] = {}
 
-
-def _get_or_create_user(user_id: str) -> User:
+def get_or_create_user(user_id: str) -> User:
     user = cast(User | None, User.query.filter_by(user_id=user_id).first())
     if not user:
         user = User(user_id=user_id)  # type: ignore
@@ -34,12 +27,13 @@ def _get_or_create_user(user_id: str) -> User:
     return user
 
 
-def load_user_chat_history(user_id: str) -> list[dict[str, str]]:
+def load_user_chat_history(user_id: str) -> Chat:
+    # check cache
     if user_id in user_sessions:
         return user_sessions[user_id]
 
-    user = _get_or_create_user(user_id)
-    chat_history: list[dict[str, str]] = []
+    user = get_or_create_user(user_id)
+    chat_history: Chat = []
     if user.context:
         chat_history = user.context.messages.copy()
 
@@ -47,8 +41,11 @@ def load_user_chat_history(user_id: str) -> list[dict[str, str]]:
     return chat_history
 
 
-def save_context_to_db(user_id: str, chat_history: list[dict[str, str]]) -> None:
-    user = _get_or_create_user(user_id)
+def save_context_to_db(user_id: str, chat_history: Chat) -> None:
+    user = get_or_create_user(user_id)
+    
+    # update cache
+    user_sessions[user_id] = chat_history
 
     if user.context:
         user.context.messages = chat_history  # type: ignore
@@ -70,12 +67,16 @@ def _clean_json_response(text: str) -> str:
 def analyse_user_conversation(
     user_id: str, analysis_ai: AI
 ) -> tuple[Analysis | None, int]:
+    
     chat_history = load_user_chat_history(user_id)
 
     if len(chat_history) < MIN_ANALYSIS_CONTEXT:
         return None, 0
 
-    user = _get_or_create_user(user_id)
+    # trim
+    context_window = chat_history[-MAX_CONTEXT:]
+
+    user = get_or_create_user(user_id)
     existing_summary = ""
     if user.summary:
         existing_summary = (
@@ -83,7 +84,7 @@ def analyse_user_conversation(
         )
 
     recent_conversation = "\n\n".join(
-        [f"{m['role'].title()}: {m['content']}" for m in chat_history]
+        [f"{m['role'].title()}: {m['content']}" for m in context_window]
     )
 
     big_five_prompt = (
@@ -120,12 +121,14 @@ def analyse_user_conversation(
         attachment_data = json.loads(attachment_text)
 
         analysis = Analysis(
-            user_id=user_id,  # type: ignore
-            big_five_personality=big_five_data,  # type: ignore
-            attachment_style=attachment_data,  # type: ignore
+            user_id=user_id, # type: ignore
+            big_five_personality=big_five_data, # type: ignore
+            attachment_style=attachment_data, # type: ignore
         )
         db.session.add(analysis)
         db.session.commit()
+
+        print(f"✨ Analysis using {len(context_window)} messages (out of {len(chat_history)} total), {total_tokens} tokens")
 
         return analysis, total_tokens
 
@@ -134,23 +137,25 @@ def analyse_user_conversation(
 
 
 def update_user_summary(user_id: str, analysis_ai: AI) -> tuple[str | None, int]:
-    user = _get_or_create_user(user_id)
+    user = get_or_create_user(user_id)
     chat_history = load_user_chat_history(user_id)
 
     if len(chat_history) < MIN_ANALYSIS_CONTEXT:
         return None, 0
+
+    context_window = chat_history[-MAX_CONTEXT:]
 
     existing_summary = ""
     if user.summary:
         existing_summary = user.summary.summary
 
     recent_conversation = "\n\n".join(
-        [f"{m['role'].title()}: {m['content']}" for m in chat_history]
+        [f"{m['role'].title()}: {m['content']}" for m in context_window]
     )
 
     prompt = (
         SUMMARY_PROMPT_HEADER
-        + f"\n\nPrevious summary:\n{existing_summary if existing_summary else 'None - this is the first summary.'}\n\n"
+        + f"\n\nPrevious summary:\n{existing_summary if existing_summary else 'None. This is the first summary.'}\n\n"
         + f"Recent conversations:\n{recent_conversation}"
     )
 
@@ -164,5 +169,7 @@ def update_user_summary(user_id: str, analysis_ai: AI) -> tuple[str | None, int]
         db.session.add(summary)
 
     db.session.commit()
+
+    print(f"✨ Summary using {len(context_window)} messages (out of {len(chat_history)} total), {tokens} tokens")
 
     return new_summary, tokens

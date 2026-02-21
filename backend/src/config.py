@@ -1,6 +1,7 @@
 # backend/src/config.py
 
 import os
+from typing import Any
 
 MODELS = {
     "sonnet": "claude-sonnet-4-5-20250929",
@@ -8,11 +9,11 @@ MODELS = {
 }
 
 MAX_TOKENS = {
-    "chat": 1024,
-    "analysis": 500,
+    "chat": 2048,
+    "analysis": 2048,
 }
 
-MAX_CONTEXT = 20  # user messages
+MAX_CONTEXT = 10  # user messages
 MIN_ANALYSIS_CONTEXT = 5  # user messages
 
 DATABASE_URI = os.getenv("DATABASE_URI", "sqlite:///reflektion.db")
@@ -21,6 +22,9 @@ FLASK_ENV = os.getenv("FLASK_ENV", "development")
 ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 CLERK_DOMAIN = os.getenv("CLERK_DOMAIN")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+
 
 BIG_FIVE_PROMPT_HEADER = f"""
 Analyse this conversation and determine the user's Big Five personality traits.
@@ -46,11 +50,12 @@ Return ONLY valid JSON with this exact structure:
 
 SUMMARY_PROMPT_HEADER = """
 You maintain a rolling summary of the user's conversations.
+Never refer to yourself.
 Update the summary to include:
 - Main themes and recurring concerns
 - Progress or changes over time  
 - Important events mentioned
-Keep it concise. Return ONLY the updated summary.
+Keep it concise (under 500 words). Return ONLY the updated summary. 
 """
 
 CHAT_PROMPT_HEADER = """
@@ -68,21 +73,17 @@ Your role is to help me understand myself better, not to make me feel better.
 # these are just for extra protection against spam
 RATE_LIMITS = {
     "chat": "50 per hour",
-    "analysis": "5 per hour",
+    "analysis": "20 per hour",
     "read": "500 per hour",
-    "delete": "5 per hour",
+    "delete": "20 per hour",
+}
+TOKEN_PACKAGES: dict[str, dict[str, Any]] = {
+    "small": {"tokens": 200000, "price": 2.99, "price_id": "price_xxx"},
+    "medium": {"tokens": 500000, "price": 4.99, "price_id": "price_xxx"},
+    "large": {"tokens": 1000000, "price": 8.99, "price_id": "price_xxx"},
 }
 
-TIER_LIMITS = {  # type: ignore
-    "free": {
-        "tokens": 50000,
-        "chat_model": MODELS["haiku"],
-    },
-    "pro": {
-        "tokens": 30000,
-        "chat_model": MODELS["sonnet"],
-    },
-}
+FREE_TOKENS = 40000
 
 ALLOWED_ORIGINS = [
     "http://localhost:5173",

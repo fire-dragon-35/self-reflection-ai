@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timezone
 from cryptography.fernet import Fernet
 from typing import TypedDict, cast
-from config import ENCRYPTION_KEY
+from config import ENCRYPTION_KEY, FREE_TOKENS
 import json
 
 
@@ -55,11 +55,12 @@ class User(db.Model):
     # token tracking
     tier = db.Column(db.String(20), default="free", nullable=False)
     tokens_used = db.Column(db.Integer, default=0, nullable=False)
+    tokens_available = db.Column(db.Integer, default=FREE_TOKENS, nullable=False)
     tokens_reset_date = db.Column(
         db.Date, default=lambda: datetime.now(timezone.utc).date(), nullable=False
     )
 
-    # Relationships
+    # relationships
     context = db.relationship(
         "Context", backref="user", uselist=False, cascade="all, delete-orphan"
     )
