@@ -88,4 +88,4 @@ ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
 if FLASK_ENV == "production":
-    ALLOWED_ORIGINS.append("https://reflektion.vercel.app")
+    ALLOWED_ORIGINS.append("https://reflektion-pi.vercel.app")
