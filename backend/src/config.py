@@ -91,5 +91,5 @@ FREE_TOKENS = 40000
 
 ALLOWED_ORIGINS = {
     "development": "http://localhost:5173",
-    "production": "https://reflektion-pi.vercel.app"
+    "production": "https://reflektion.app"
 }
