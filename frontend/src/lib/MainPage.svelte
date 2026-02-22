@@ -98,8 +98,8 @@
   }
 </script>
 
-<main class="max-w-7xl mx-auto p-3 sm:p-6">
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+<main class="w-full max-w-7xl mx-auto p-3 sm:p-6">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 w-full">
     <div class="lg:col-span-2">
       <div class="card h-[500px] sm:h-[600px] flex flex-col">
         <div class="flex-1 overflow-y-auto scrollbar-hide relative" bind:this={messagesContainer}>

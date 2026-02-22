@@ -15,7 +15,7 @@
 </script>
 
 <ClerkProvider publishableKey={clerkPubKey} appearance={{theme: dark}}>
-  <div class="min-h-screen bg-[#0a0e14] flex flex-col">
+  <div class="min-h-screen bg-[#0a0e14] flex flex-col w-full overflow-x-hidden">
     <header class="bg-[#151a21] border-b border-gray-800">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
         <div class="flex items-center gap-2 sm:gap-3">
