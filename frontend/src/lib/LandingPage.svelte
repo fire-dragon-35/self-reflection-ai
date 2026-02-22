@@ -1,25 +1,27 @@
+<!-- frontend/src/lib/LandingPage.svelte -->
+
 <script lang="ts">
   import { SignInButton } from 'svelte-clerk/client';
   import demoImage from '../assets/demo.png';
 </script>
 
-<section class="max-w-6xl mx-auto px-6 py-20">
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+<section class="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
     <div>
-      <h1 class="text-5xl lg:text-6xl font-semibold mb-6 leading-tight">
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-semibold mb-4 sm:mb-6 leading-tight">
         Understand yourself through AI.
       </h1>
-      <p class="text-xl text-gray-300 mb-8">
+      <p class="text-lg sm:text-xl text-gray-300 mb-6 sm:mb-8">
         Private conversations. Real insights.
       </p>
       <SignInButton mode="modal">
-        <button class="btn-primary text-lg px-8 py-3">
+        <button class="btn-primary text-base sm:text-lg px-6 sm:px-8 py-2.5 sm:py-3">
           Try for free
         </button>
       </SignInButton>
     </div>
 
-    <div>
+    <div class="order-first lg:order-last">
       <img src={demoImage} alt="Reflektion app demo" class="rounded-lg border border-gray-800 w-full h-auto" />
     </div>
   </div>

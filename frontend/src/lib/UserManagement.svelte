@@ -1,3 +1,5 @@
+<!-- frontend/src/lib/UserManagement.svelte -->
+
 <script lang="ts">
   import { useClerkContext } from 'svelte-clerk/client';
   import { deleteData, deleteUser, postCreateCheckout, handleApiError } from './api';
@@ -12,13 +14,19 @@
   let deletingAccount = false;
   let error = '';
   let purchasing = false;
+
+  function formatResetDate(resetDate: string): string {
+    const date = new Date(resetDate);
+    date.setDate(date.getDate() + 30);
+    return date.toLocaleDateString();
+  }
   
   function formatTokens(tokens: number): string {
     if (tokens >= 1000000) {
       return `${(tokens / 1000000).toFixed(1)}M`;
     }
     if (tokens >= 1000) {
-      return `${(tokens / 1000).toFixed(0)}k`;
+      return `${(tokens / 1000).toFixed(1)}k`;
     }
     return tokens.toString();
   }
@@ -31,7 +39,7 @@
     try {
       const token = await ctx.session?.getToken();
       await deleteData(token);
-      onClose();
+      window.location.reload();
     } catch (err) {
       const apiError = handleApiError(err);
       error = apiError.message;
@@ -71,12 +79,16 @@
       purchasing = false;
     }
   }
-  
-  $: displayedTokens = usage ? Math.min(usage.tokens_used, usage.tokens_available) : 0;
 </script>
 
-<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" on:click={onClose}>
-  <div class="bg-[#151a21] border border-gray-800 rounded-lg p-6 max-w-sm w-full mx-4 relative" on:click|stopPropagation>
+<div 
+  class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" 
+  on:click={onClose}
+>
+  <div 
+    class="bg-[#151a21] border border-gray-800 rounded-lg p-4 sm:p-6 w-full max-w-sm max-h-[90vh] overflow-y-auto relative" 
+    on:click|stopPropagation
+  >
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-semibold">Settings</h2>
       <button on:click={onClose} class="text-gray-400 hover:text-gray-100 text-xl">
@@ -100,31 +112,32 @@
     
     <div class="space-y-2 mb-4 text-sm">
       <div class="text-gray-400">
-        <span class="text-gray-500">ID:</span> <span class="font-mono">{userId}</span>
+        <span class="text-gray-500">ID:</span> <span class="font-mono text-xs">{userId}</span>
       </div>
       {#if usage}
         <div class="text-gray-400">
           <span class="text-gray-500">Tier:</span> <span class="capitalize">{usage.tier}</span>
         </div>
         <div class="text-gray-400">
-          <span class="text-gray-500">Tokens used:</span> 
-          <span class="font-mono">
-            {formatTokens(displayedTokens)}/{formatTokens(usage.tokens_available)} 
-            ({Math.round((displayedTokens / usage.tokens_available) * 100)}%)
-          </span>
+          <span class="text-gray-500">Tokens available:</span> 
+          <span class="font-mono">{formatTokens(usage.tokens_available)}</span>
+        </div>
+        <div class="text-gray-400">
+          <span class="text-gray-500">Free refill (30k):</span> 
+          <span>{formatResetDate(usage.tokens_reset_date)}</span>
         </div>
       {/if}
     </div>
     
     <div class="space-y-2">
-      <div class="text-gray-500 mb-2">Refill tokens:</div>
+      <div class="text-xs text-gray-500 mb-2">Buy Tokens</div>
       
       <button
         on:click={() => handleBuyTokens('small')}
         disabled={purchasing}
         class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm disabled:opacity-50"
       >
-        🎉 200k tokens: $2.99
+        🎉 200k: $2.99
       </button>
       
       <button
@@ -132,7 +145,7 @@
         disabled={purchasing}
         class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm disabled:opacity-50"
       >
-        🔥 500k tokens: $4.99
+        🔥 500k: $4.99
       </button>
       
       <button
@@ -140,7 +153,7 @@
         disabled={purchasing}
         class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm disabled:opacity-50"
       >
-        🚀 1M tokens: $8.99
+        🚀 1M: $8.99
       </button>
       
       <div class="border-t border-gray-700 my-3"></div>
@@ -150,7 +163,7 @@
         disabled={deleting}
         class="w-full px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm disabled:opacity-50"
       >
-        {deleting ? 'Deleting...' : 'Clear all data'}
+        {deleting ? 'Deleting...' : 'Clear All Data'}
       </button>
       
       <button
@@ -158,7 +171,7 @@
         disabled={deletingAccount}
         class="w-full px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-sm disabled:opacity-50"
       >
-        {deletingAccount ? 'Deleting...' : 'Delete user'}
+        {deletingAccount ? 'Deleting...' : 'Delete Account'}
       </button>
     </div>
   </div>

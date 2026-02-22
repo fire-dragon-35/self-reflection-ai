@@ -1,3 +1,5 @@
+<!-- frontend/src/lib/Navbar.svelte -->
+
 <script lang="ts">
   import { useClerkContext, UserButton } from 'svelte-clerk/client';
   import { onMount } from 'svelte';
@@ -16,7 +18,7 @@
       return `${(tokens / 1000000).toFixed(1)}M`;
     }
     if (tokens >= 1000) {
-      return `${(tokens / 1000).toFixed(0)}k`;
+      return `${(tokens / 1000).toFixed(1)}k`;
     }
     return tokens.toString();
   }
@@ -43,20 +45,18 @@
       userId = user.id;
     }
   });
-  
-  $: displayedTokens = usage ? Math.min(usage.tokens_used, usage.tokens_available) : 0;
-  $: tokensAvailable = usage?.tokens_available || 0;
-  $: isMaxed = usage && usage.tokens_used >= usage.tokens_available;
 </script>
 
-<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 sm:gap-4">
   {#if usage}
     <button
       on:click={() => showUserManagement = true}
-      class="text-sm transition-all duration-300 {animating ? 'scale-110' : ''} {isMaxed ? 'text-red-400 hover:text-red-300' : 'text-gray-400 hover:text-gray-100'} cursor-pointer"
+      class="text-xs sm:text-sm transition-all duration-300 {animating ? 'scale-110' : ''} {usage.tokens_available == 0 ? 'text-red-400 hover:text-red-300' : 'text-gray-400 hover:text-gray-100'} cursor-pointer"
     >
-      <span class="capitalize">{usage.tier}</span> ✨ 
-      <span class="font-mono">{formatTokens(displayedTokens)}/{formatTokens(tokensAvailable)}</span> tokens used
+      <span class="hidden sm:inline capitalize">{usage.tier}</span>
+      <span class="hidden sm:inline">✨</span>
+      <span class="font-mono">{formatTokens(usage.tokens_available)}</span>
+      <span class="hidden sm:inline">tokens</span>
     </button>
   {/if}
   <UserButton />

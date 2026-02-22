@@ -1,3 +1,5 @@
+<!-- frontend/src/App.svelte -->
+
 <script lang="ts">
   import { ClerkProvider, SignedIn, SignedOut, SignInButton } from 'svelte-clerk/client';
   import LandingPage from './lib/LandingPage.svelte';
@@ -15,10 +17,10 @@
 <ClerkProvider publishableKey={clerkPubKey} appearance={{theme: dark}}>
   <div class="min-h-screen bg-[#0a0e14] flex flex-col">
     <header class="bg-[#151a21] border-b border-gray-800">
-      <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <img src={logo} alt="Reflektion" class="w-8 h-8" />
-          <h1 class="text-xl font-semibold">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2 sm:gap-3">
+          <img src={logo} alt="Reflektion" class="w-6 h-6 sm:w-8 sm:h-8" />
+          <h1 class="text-lg sm:text-xl font-semibold">
             Reflektion <span class="text-red-500 text-xs italic" style="font-family: cursive;">Alpha</span>
           </h1>
         </div>
@@ -29,7 +31,7 @@
         
         <SignedOut>
           <SignInButton mode="modal">
-            <button class="btn-primary text-sm">
+            <button class="btn-primary text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2">
               Sign in
             </button>
           </SignInButton>
@@ -47,8 +49,8 @@
       </SignedOut>
     </div>
 
-    <footer class="py-6">
-      <div class="max-w-7xl mx-auto px-6 text-center text-sm text-gray-400">
+    <footer class="py-4 sm:py-6">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 text-center text-xs sm:text-sm text-gray-400">
         <div class="mb-2">
           <a 
             href={githubUrl} 

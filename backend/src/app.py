@@ -17,6 +17,7 @@ from src.config import (
     TOKEN_PACKAGES,
     STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET,
+    MAX_CONTEXT
 )
 from src.auth import get_user_id
 from src.rate_limit import limiter
@@ -112,6 +113,12 @@ def post_chat():
     use_tokens(user_id, tokens)
 
     save_context_to_db(user_id, chat_history)
+
+    # rolling summary, ensures we don't lose information
+    if len(chat_history) > 0 and len(chat_history) % MAX_CONTEXT == 0:
+        print(f"✨ Auto-summarizing at {len(chat_history)} messages")
+        _, tokens = update_user_summary(user_id, analysis_ai)
+        use_tokens(user_id, tokens)
 
     return jsonify({"response": response_text})
 

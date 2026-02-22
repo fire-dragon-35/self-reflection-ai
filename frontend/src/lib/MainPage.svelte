@@ -1,3 +1,5 @@
+<!-- frontend/src/lib/MainPage.svelte -->
+
 <script lang="ts">
   import { useClerkContext } from 'svelte-clerk/client';
   import { onMount, afterUpdate } from 'svelte';
@@ -96,10 +98,10 @@
   }
 </script>
 
-<main class="max-w-7xl mx-auto p-6">
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<main class="max-w-7xl mx-auto p-3 sm:p-6">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
     <div class="lg:col-span-2">
-      <div class="card h-[600px] flex flex-col">
+      <div class="card h-[500px] sm:h-[600px] flex flex-col">
         <div class="flex-1 overflow-y-auto scrollbar-hide relative" bind:this={messagesContainer}>
           <div class="sticky top-0 h-8 bg-gradient-to-b from-[#151a21] via-[#151a21]/80 to-transparent pointer-events-none z-10"></div>
           
@@ -150,7 +152,8 @@
     </div>
 
     <div>
-      <div class="card h-[600px] flex flex-col relative">
+      <div>
+        <div class="card h-[500px] sm:h-[600px] flex flex-col relative">
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-xl font-semibold">Your Insights</h2>
           {#if analysis?.timestamp}
@@ -228,7 +231,7 @@
             disabled={analyzing}
             class="w-full px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg disabled:bg-gray-700 disabled:opacity-50"
           >
-            {analyzing ? 'Analyzing...' : 'Generate Analysis'}
+            {analyzing ? 'Analysing...' : 'Generate Analysis'}
           </button>
         </div>
       </div>
