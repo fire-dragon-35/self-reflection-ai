@@ -89,7 +89,7 @@ TOKEN_PACKAGES: dict[str, dict[str, Any]] = {
 
 FREE_TOKENS = 40000
 
-ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "https://reflektion-pi.vercel.app"
-]
+ALLOWED_ORIGINS = {
+    "development": "http://localhost:5173",
+    "production": "https://reflektion-pi.vercel.app"
+}

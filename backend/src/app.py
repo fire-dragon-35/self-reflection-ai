@@ -55,7 +55,7 @@ CORS(
     app,
     resources={
         r"/api/*": {
-            "origins": ALLOWED_ORIGINS,
+            "origins": list(ALLOWED_ORIGINS.values()),
             "methods": ["GET", "POST", "DELETE"],
             "allow_headers": ["Content-Type", "Authorization"],
         }
@@ -263,8 +263,8 @@ def create_checkout():
                 "quantity": 1,
             }],
             mode="payment",
-            success_url=f"{ALLOWED_ORIGINS[0]}/?success=true",
-            cancel_url=f"{ALLOWED_ORIGINS[0]}/?canceled=true",
+            success_url=f"{ALLOWED_ORIGINS["production"]}/?success=true",
+            cancel_url=f"{ALLOWED_ORIGINS["production"]}/?canceled=true",
             client_reference_id=user_id,
             metadata={
                 "user_id": user_id,
