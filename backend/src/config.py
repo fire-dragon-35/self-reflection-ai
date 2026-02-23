@@ -91,5 +91,6 @@ FREE_TOKENS = 40000
 
 ALLOWED_ORIGINS = {
     "development": "http://localhost:5173",
-    "production": "https://reflektion.app"
+    "production": "https://reflektion.app",
+    "worldwideweb": "https://www.reflektion.app"
 }
