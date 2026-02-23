@@ -87,7 +87,7 @@ TOKEN_PACKAGES: dict[str, dict[str, Any]] = {
     "large": {"tokens": 1000000, "price": 8.99, "price_id": "price_1T3KNUD57iw5zYt2gksBlvnf"},
 }
 
-FREE_TOKENS = 40000
+FREE_TOKENS = 30000
 
 ALLOWED_ORIGINS = {
     "development": "http://localhost:5173",
