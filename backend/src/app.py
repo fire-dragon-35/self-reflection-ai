@@ -3,7 +3,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from src.models import db, Analysis
 from src.ai import AI
@@ -76,6 +76,14 @@ chat_ai = AI(
 )
 analysis_ai = AI(model=MODELS["haiku"], max_tokens=MAX_TOKENS["analysis"])
 
+# prevent caching in cloud
+def no_cache(response: Response) -> Response:
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "OK"})
@@ -132,7 +140,7 @@ def get_messages():
         return jsonify({"error": "Unauthorized"}), 401
 
     chat_history = load_user_chat_history(user_id)
-    return jsonify({"messages": chat_history})
+    return no_cache(jsonify({"messages": chat_history}))
 
 
 @app.route("/api/data", methods=["DELETE"])
@@ -175,7 +183,7 @@ def get_analysis():
         .all(),
     )
 
-    return jsonify({"analysis": [a.to_dict() for a in analyses]})
+    return no_cache(jsonify({"analysis": [a.to_dict() for a in analyses]}))
 
 
 @app.route("/api/analyse", methods=["POST"])
@@ -230,7 +238,7 @@ def get_usage():
         return jsonify({"error": "Unauthorized"}), 401
 
     usage = get_user_usage(user_id)
-    return jsonify(usage)
+    return no_cache(jsonify(usage))
 
 
 @app.route("/api/summary", methods=["GET"])
@@ -243,7 +251,7 @@ def get_summary():
 
     user = get_or_create_user(user_id)
     if not user.summary:
-        return jsonify({"summary": None})
+        return no_cache(jsonify({"summary": None}))
 
     return jsonify({"summary": user.summary.summary})
 
