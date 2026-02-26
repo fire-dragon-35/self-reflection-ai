@@ -13,10 +13,6 @@ from src.config import (
 import json
 from typing import cast
 
-Chat = list[dict[str, str]]
-
-# cache
-user_sessions: dict[str, Chat] = {}
 
 def get_or_create_user(user_id: str) -> User:
     user = cast(User | None, User.query.filter_by(user_id=user_id).first())
@@ -27,26 +23,17 @@ def get_or_create_user(user_id: str) -> User:
     return user
 
 
-def load_user_chat_history(user_id: str, skip_cache: bool = False) -> list[dict[str, str]]:
-    if not skip_cache and user_id in user_sessions:
-        return user_sessions[user_id]
-
+def load_user_chat_history(user_id: str) -> list[dict[str, str]]:
     user = get_or_create_user(user_id)
     chat_history: list[dict[str, str]] = []
     if user.context:
         chat_history = user.context.messages.copy()
-
-    if not skip_cache:
-        user_sessions[user_id] = chat_history
     
     return chat_history
 
 
-def save_context_to_db(user_id: str, chat_history: Chat) -> None:
+def save_context_to_db(user_id: str, chat_history: list[dict[str, str]]) -> None:
     user = get_or_create_user(user_id)
-    
-    # update cache
-    user_sessions[user_id] = chat_history
 
     if user.context:
         user.context.messages = chat_history  # type: ignore
@@ -74,7 +61,7 @@ def analyse_user_conversation(
     if len(chat_history) < MIN_ANALYSIS_CONTEXT:
         return None, 0
 
-    # trim
+    # trim to MAX_CONTEXT for analysis
     context_window = chat_history[-MAX_CONTEXT:]
 
     user = get_or_create_user(user_id)
@@ -106,14 +93,14 @@ def analyse_user_conversation(
     try:
         # big 5 analysis
         big_five_text, tokens = analysis_ai.ask(
-            [{"role": "user", "content": big_five_prompt}]
+            [{"role": "user", "content": big_five_prompt}]  # type: ignore
         )
         big_five_text = _clean_json_response(big_five_text)
         total_tokens += tokens
 
         # attachment analysis
         attachment_text, tokens = analysis_ai.ask(
-            [{"role": "user", "content": attachment_prompt}]
+            [{"role": "user", "content": attachment_prompt}]  # type: ignore
         )
         attachment_text = _clean_json_response(attachment_text)
         total_tokens += tokens
@@ -122,10 +109,10 @@ def analyse_user_conversation(
         attachment_data = json.loads(attachment_text)
 
         analysis = Analysis(
-            user_id=user_id, # type: ignore
-            big_five_personality=big_five_data, # type: ignore
-            attachment_style=attachment_data, # type: ignore
-        )
+            user_id=user_id,
+            big_five_personality=big_five_data,
+            attachment_style=attachment_data,
+        )  # type: ignore
         db.session.add(analysis)
         db.session.commit()
 
@@ -138,12 +125,14 @@ def analyse_user_conversation(
 
 
 def update_user_summary(user_id: str, analysis_ai: AI) -> tuple[str | None, int]:
+    
     user = get_or_create_user(user_id)
     chat_history = load_user_chat_history(user_id)
 
     if len(chat_history) < MIN_ANALYSIS_CONTEXT:
         return None, 0
 
+    # trim to MAX_CONTEXT for summary
     context_window = chat_history[-MAX_CONTEXT:]
 
     existing_summary = ""
@@ -160,7 +149,7 @@ def update_user_summary(user_id: str, analysis_ai: AI) -> tuple[str | None, int]
         + f"Recent conversations:\n{recent_conversation}"
     )
 
-    new_summary, tokens = analysis_ai.ask([{"role": "user", "content": prompt}])
+    new_summary, tokens = analysis_ai.ask([{"role": "user", "content": prompt}])  # type: ignore
 
     if user.summary:
         user.summary.summary = new_summary  # type: ignore

@@ -26,7 +26,6 @@ from src.services import (
     save_context_to_db,
     analyse_user_conversation,
     update_user_summary,
-    user_sessions,
     get_or_create_user,
 )
 from src.usage import check_token_limit, use_tokens, get_user_usage, add_purchased_tokens
@@ -161,9 +160,6 @@ def delete_data():
     Analysis.query.filter_by(user_id=user_id).delete()
     db.session.commit()
 
-    # clear from cache
-    user_sessions.pop(user_id, None)
-
     return jsonify({"message": "Data cleared"})
 
 
@@ -217,9 +213,6 @@ def delete_user():
     user_id = get_user_id()
     if not user_id:
         return jsonify({"error": "Unauthorized"}), 401
-
-    # clear from cache
-    user_sessions.pop(user_id, None)
 
     # delete user (cascades to all data)
     user = get_or_create_user(user_id)
