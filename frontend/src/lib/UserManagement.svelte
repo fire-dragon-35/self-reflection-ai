@@ -21,16 +21,6 @@
     return date.toLocaleDateString();
   }
   
-  function formatTokens(tokens: number): string {
-    if (tokens >= 1000000) {
-      return `${(tokens / 1000000).toFixed(1)}M`;
-    }
-    if (tokens >= 1000) {
-      return `${(tokens / 1000).toFixed(1)}k`;
-    }
-    return tokens.toString();
-  }
-  
   async function handleDeleteData() {
     if (!confirm('Delete all your chat history and insights?')) return;
     
@@ -120,7 +110,7 @@
         </div>
         <div class="text-gray-400">
           <span class="text-gray-500">Tokens available:</span> 
-          <span class="font-mono">{formatTokens(usage.tokens_available)}</span>
+          <span class="font-mono">{usage.tokens_available}</span>
         </div>
         <div class="text-gray-400">
           <span class="text-gray-500">Free refill (30k):</span> 
