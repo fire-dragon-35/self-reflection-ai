@@ -27,17 +27,18 @@ def get_or_create_user(user_id: str) -> User:
     return user
 
 
-def load_user_chat_history(user_id: str) -> Chat:
-    # check cache
-    if user_id in user_sessions:
+def load_user_chat_history(user_id: str, skip_cache: bool = False) -> list[dict[str, str]]:
+    if not skip_cache and user_id in user_sessions:
         return user_sessions[user_id]
 
     user = get_or_create_user(user_id)
-    chat_history: Chat = []
+    chat_history: list[dict[str, str]] = []
     if user.context:
         chat_history = user.context.messages.copy()
 
-    user_sessions[user_id] = chat_history
+    if not skip_cache:
+        user_sessions[user_id] = chat_history
+    
     return chat_history
 
 

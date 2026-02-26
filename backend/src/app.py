@@ -139,7 +139,7 @@ def get_messages():
     if not user_id:
         return jsonify({"error": "Unauthorized"}), 401
 
-    chat_history = load_user_chat_history(user_id)
+    chat_history = load_user_chat_history(user_id, skip_cache=True)
     return no_cache(jsonify({"messages": chat_history}))
 
 
