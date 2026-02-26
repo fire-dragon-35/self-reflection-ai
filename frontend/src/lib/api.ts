@@ -57,8 +57,8 @@ export async function postChat(token: string, message: string) {
 
 // GET /api/messages
 export async function getMessages(token: string) {
-  const res = await axios.get(`${API_URL}/api/messages`, {
-    headers: { Authorization: `Bearer ${token}` }
+  const res = await axios.get(`${API_URL}/api/messages?t=${Date.now()}`, {
+    headers: { Authorization: `Bearer ${token}` } 
   });
   return res.data.messages || [];
 }
@@ -72,8 +72,8 @@ export async function deleteData(token: string) {
 
 // GET /api/analysis
 export async function getAnalysis(token: string) {
-  const res = await axios.get(`${API_URL}/api/analysis`, {
-    headers: { Authorization: `Bearer ${token}` }
+  const res = await axios.get(`${API_URL}/api/analysis?t=${Date.now()}`, {
+    headers: { Authorization: `Bearer ${token}` } 
   });
   return res.data.analysis || [];
 }
@@ -98,16 +98,16 @@ export async function deleteUser(token: string) {
 
 // GET /api/usage
 export async function getUsage(token: string) {
-  const res = await axios.get(`${API_URL}/api/usage`, {
-    headers: { Authorization: `Bearer ${token}` }
+  const res = await axios.get(`${API_URL}/api/usage?t=${Date.now()}`, {
+    headers: { Authorization: `Bearer ${token}` } 
   });
   return res.data;
 }
 
 // GET /api/summary
 export async function getSummary(token: string) {
-  const res = await axios.get(`${API_URL}/api/summary`, {
-    headers: { Authorization: `Bearer ${token}` }
+  const res = await axios.get(`${API_URL}/api/summary?t=${Date.now()}`, {
+    headers: { Authorization: `Bearer ${token}` } 
   });
   return res.data.summary || null;
 }
