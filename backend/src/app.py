@@ -151,9 +151,6 @@ def delete_data():
     if not user_id:
         return jsonify({"error": "Unauthorized"}), 401
 
-    # clear from cache
-    user_sessions.pop(user_id, None)
-
     # clear from database
     user = get_or_create_user(user_id)
     if user.context:
@@ -163,6 +160,9 @@ def delete_data():
 
     Analysis.query.filter_by(user_id=user_id).delete()
     db.session.commit()
+
+    # clear from cache
+    user_sessions.pop(user_id, None)
 
     return jsonify({"message": "Data cleared"})
 
