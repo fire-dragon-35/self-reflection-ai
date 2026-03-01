@@ -31,6 +31,7 @@ from src.services import (
 from src.usage import check_token_limit, use_tokens, get_user_usage, add_purchased_tokens
 from typing import cast
 import stripe
+from datetime import datetime, timezone
 
 """
 Endpoints:
@@ -109,13 +110,25 @@ def post_chat():
         return jsonify({"error": "No message provided"}), 400
 
     chat_history = load_user_chat_history(user_id)
-    chat_history.append({"role": "user", "content": message_content})
+    chat_history.append(
+        {
+            "role": "user", 
+            "content": message_content,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    )
 
     response_text, tokens = chat_ai.ask(chat_history) # type: ignore
     if not response_text:
         response_text = "Sorry, I couldn't generate a response right now."
 
-    chat_history.append({"role": "assistant", "content": response_text})
+    chat_history.append(
+        {
+            "role": "assistant", 
+            "content": response_text,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    )
 
     use_tokens(user_id, tokens)
 
@@ -138,7 +151,7 @@ def get_messages():
     if not user_id:
         return jsonify({"error": "Unauthorized"}), 401
 
-    chat_history = load_user_chat_history(user_id, skip_cache=True)
+    chat_history = load_user_chat_history(user_id)
     return no_cache(jsonify({"messages": chat_history}))
 
 

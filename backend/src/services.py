@@ -72,7 +72,7 @@ def analyse_user_conversation(
         )
 
     recent_conversation = "\n\n".join(
-        [f"{m['role'].title()}: {m['content']}" for m in context_window]
+        [f"[{m.get('timestamp', 'unknown')}] {m['role'].title()}: {m['content']}" for m in context_window]
     )
 
     big_five_prompt = (

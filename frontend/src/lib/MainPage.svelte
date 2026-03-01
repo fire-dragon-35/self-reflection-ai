@@ -1,5 +1,3 @@
-<!-- frontend/src/lib/MainPage.svelte -->
-
 <script lang="ts">
   import { useClerkContext } from 'svelte-clerk/client';
   import { onMount, afterUpdate } from 'svelte';
@@ -24,7 +22,7 @@
   
   // chat state
   let message = '';
-  let messages: Array<{role: string, content: string}> = [];
+  let messages: Array<{role: string, content: string, timestamp?: string}> = [];
   let loading = false;
   let chatError = '';
   let messagesContainer: HTMLElement;
@@ -34,6 +32,17 @@
   let summary: string | null = null;
   let analyzing = false;
   let insightsError = '';
+  
+  function formatTimestamp(timestamp: string): string {
+    const date = new Date(timestamp);
+    const time = date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+    const dateStr = date.toLocaleDateString('sv-SE', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: '2-digit' 
+    }).replace(/\//g, '/');
+    return `${time} ${dateStr}`;
+  }
   
   afterUpdate(() => {
     if (messagesContainer) {
@@ -108,13 +117,20 @@
           <div class="p-4 space-y-4 -mt-8 pt-8">
             {#each messages as msg}
               <div class="flex {msg.role === 'user' ? 'justify-end' : 'justify-start'}">
-                <div class="max-w-[80%] rounded-lg p-3 {msg.role === 'user' ? 'bg-blue-500' : 'bg-[#1a1f2e]'}">
-                  {#if msg.role === 'assistant'}
-                    <div class="prose prose-invert prose-sm max-w-none">
-                      {@html marked(msg.content)}
+                <div class="max-w-[80%]">
+                  <div class="rounded-lg p-3 {msg.role === 'user' ? 'bg-blue-500' : 'bg-[#1a1f2e]'}">
+                    {#if msg.role === 'assistant'}
+                      <div class="prose prose-invert prose-sm max-w-none">
+                        {@html marked(msg.content)}
+                      </div>
+                    {:else}
+                      {msg.content}
+                    {/if}
+                  </div>
+                  {#if msg.role === 'user' && msg.timestamp}
+                    <div class="text-xs text-gray-500 mt-1 text-right">
+                      {formatTimestamp(msg.timestamp)}
                     </div>
-                  {:else}
-                    {msg.content}
                   {/if}
                 </div>
               </div>
@@ -152,13 +168,12 @@
     </div>
 
     <div>
-      <div>
-        <div class="card h-[500px] sm:h-[600px] flex flex-col relative">
+      <div class="card h-[500px] sm:h-[600px] flex flex-col relative">
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-xl font-semibold">Your Insights</h2>
           {#if analysis?.timestamp}
             <span class="text-xs text-gray-500">
-              {new Date(analysis.timestamp).toLocaleDateString()}
+              {formatTimestamp(analysis.timestamp)}
             </span>
           {/if}
         </div>
