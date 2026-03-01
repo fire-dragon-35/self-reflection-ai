@@ -101,7 +101,8 @@ class Analysis(db.Model):
         db.String(100), db.ForeignKey("user.user_id"), nullable=False, index=True
     )
     big_five_personality_encrypted = db.Column(db.Text)
-    attachment_style_encrypted = db.Column(db.Text)
+    thinking_patterns_encrypted = db.Column(db.Text)
+    communication_style_encrypted = db.Column(db.Text)
     timestamp = db.Column(
         db.DateTime,
         default=lambda: datetime.now(timezone.utc),
@@ -125,25 +126,41 @@ class Analysis(db.Model):
             self.big_five_personality_encrypted = encrypt(json_str)
 
     @property
-    def attachment_style(self) -> AttachmentStyleDict | None:
-        if not self.attachment_style_encrypted:
+    def thinking_patterns(self) -> dict | None:
+        if not self.thinking_patterns_encrypted:
             return None
-        decrypted = decrypt(self.attachment_style_encrypted)
-        return cast(AttachmentStyleDict, json.loads(decrypted))
+        decrypted = decrypt(self.thinking_patterns_encrypted)
+        return json.loads(decrypted)
 
-    @attachment_style.setter
-    def attachment_style(self, value: AttachmentStyleDict | None) -> None:
+    @thinking_patterns.setter
+    def thinking_patterns(self, value: dict | None) -> None:
         if value is None:
-            self.attachment_style_encrypted = None
+            self.thinking_patterns_encrypted = None
         else:
             json_str = json.dumps(value)
-            self.attachment_style_encrypted = encrypt(json_str)
+            self.thinking_patterns_encrypted = encrypt(json_str)
 
-    def to_dict(self) -> AnalysisDict:
+    @property
+    def communication_style(self) -> dict | None:
+        if not self.communication_style_encrypted:
+            return None
+        decrypted = decrypt(self.communication_style_encrypted)
+        return json.loads(decrypted)
+
+    @communication_style.setter
+    def communication_style(self, value: dict | None) -> None:
+        if value is None:
+            self.communication_style_encrypted = None
+        else:
+            json_str = json.dumps(value)
+            self.communication_style_encrypted = encrypt(json_str)
+
+    def to_dict(self) -> dict:
         return {
             "id": self.id,
             "big_five_personality": self.big_five_personality,
-            "attachment_style": self.attachment_style,
+            "thinking_patterns": self.thinking_patterns,
+            "communication_style": self.communication_style,
             "timestamp": self.timestamp.isoformat(),
         }
 

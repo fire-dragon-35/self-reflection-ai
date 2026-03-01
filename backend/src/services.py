@@ -5,10 +5,11 @@ from datetime import datetime, timezone
 from src.ai import AI
 from src.config import (
     BIG_FIVE_PROMPT_HEADER,
-    ATTACHMENT_STYLE_PROMPT_HEADER,
+    THINKING_PATTERNS_PROMPT_HEADER,
+    COMMUNICATION_STYLE_PROMPT_HEADER,
     SUMMARY_PROMPT_HEADER,
     MIN_ANALYSIS_CONTEXT,
-    MAX_CONTEXT
+    MAX_CONTEXT,
 )
 import json
 from typing import cast
@@ -28,7 +29,7 @@ def load_user_chat_history(user_id: str) -> list[dict[str, str]]:
     chat_history: list[dict[str, str]] = []
     if user.context:
         chat_history = user.context.messages.copy()
-    
+
     return chat_history
 
 
@@ -55,7 +56,7 @@ def _clean_json_response(text: str) -> str:
 def analyse_user_conversation(
     user_id: str, analysis_ai: AI
 ) -> tuple[Analysis | None, int]:
-    
+
     chat_history = load_user_chat_history(user_id)
 
     if len(chat_history) < MIN_ANALYSIS_CONTEXT:
@@ -72,7 +73,10 @@ def analyse_user_conversation(
         )
 
     recent_conversation = "\n\n".join(
-        [f"[{m.get('timestamp', 'unknown')}] {m['role'].title()}: {m['content']}" for m in context_window]
+        [
+            f"[{m.get('timestamp', 'unknown')}] {m['role'].title()}: {m['content']}"
+            for m in context_window
+        ]
     )
 
     big_five_prompt = (
@@ -81,8 +85,14 @@ def analyse_user_conversation(
         + "Recent conversation:\n"
         + recent_conversation
     )
-    attachment_prompt = (
-        ATTACHMENT_STYLE_PROMPT_HEADER
+    thinking_prompt = (
+        THINKING_PATTERNS_PROMPT_HEADER
+        + existing_summary
+        + "Recent conversation:\n"
+        + recent_conversation
+    )
+    communication_prompt = (
+        COMMUNICATION_STYLE_PROMPT_HEADER
         + existing_summary
         + "Recent conversation:\n"
         + recent_conversation
@@ -91,41 +101,49 @@ def analyse_user_conversation(
     total_tokens = 0
 
     try:
-        # big 5 analysis
         big_five_text, tokens = analysis_ai.ask(
             [{"role": "user", "content": big_five_prompt}]  # type: ignore
         )
         big_five_text = _clean_json_response(big_five_text)
-        total_tokens += tokens
-
-        # attachment analysis
-        attachment_text, tokens = analysis_ai.ask(
-            [{"role": "user", "content": attachment_prompt}]  # type: ignore
-        )
-        attachment_text = _clean_json_response(attachment_text)
-        total_tokens += tokens
-
         big_five_data = json.loads(big_five_text)
-        attachment_data = json.loads(attachment_text)
+        total_tokens += tokens
+
+        thinking_text, tokens = analysis_ai.ask(
+            [{"role": "user", "content": thinking_prompt}]  # type: ignore
+        )
+        thinking_text = _clean_json_response(thinking_text)
+        thinking_data = json.loads(thinking_text)
+        total_tokens += tokens
+
+        communication_text, tokens = analysis_ai.ask(
+            [{"role": "user", "content": communication_prompt}]  # type: ignore
+        )
+        communication_text = _clean_json_response(communication_text)
+        communication_data = json.loads(communication_text)
+        total_tokens += tokens
 
         analysis = Analysis(
             user_id=user_id,
             big_five_personality=big_five_data,
-            attachment_style=attachment_data,
+            thinking_patterns=thinking_data,
+            communication_style=communication_data,
         )  # type: ignore
         db.session.add(analysis)
         db.session.commit()
 
-        print(f"✨ Analysis using {len(context_window)} messages (out of {len(chat_history)} total), {total_tokens} tokens")
+        print(
+            f"✨ Analysis using {len(context_window)} messages (out of {len(chat_history)} total), {total_tokens} tokens"
+        )
 
         return analysis, total_tokens
 
-    except Exception:
+    except Exception as e:
+        print(f"❌ Analysis failed: {e}")
         return None, 0
 
 
 def update_user_summary(user_id: str, analysis_ai: AI) -> tuple[str | None, int]:
-    
+
     user = get_or_create_user(user_id)
     chat_history = load_user_chat_history(user_id)
 
@@ -160,6 +178,8 @@ def update_user_summary(user_id: str, analysis_ai: AI) -> tuple[str | None, int]
 
     db.session.commit()
 
-    print(f"✨ Summary using {len(context_window)} messages (out of {len(chat_history)} total), {tokens} tokens")
+    print(
+        f"✨ Summary using {len(context_window)} messages (out of {len(chat_history)} total), {tokens} tokens"
+    )
 
     return new_summary, tokens

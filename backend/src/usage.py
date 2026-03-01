@@ -7,7 +7,7 @@ from src.services import get_or_create_user
 def check_token_limit(user_id: str) -> bool:
     user = get_or_create_user(user_id)
     today = datetime.now(timezone.utc).date()
-    
+
     # reset monthly free tokens
     days_since_reset = (today - user.tokens_reset_date).days
     if days_since_reset >= 30:
@@ -33,7 +33,7 @@ def add_purchased_tokens(user_id: str, tokens: int) -> None:
 
 def get_user_usage(user_id: str) -> dict[str, str | int]:
     user = get_or_create_user(user_id)
-    
+
     return {
         "tier": user.tier,
         "tokens_used": user.tokens_used,

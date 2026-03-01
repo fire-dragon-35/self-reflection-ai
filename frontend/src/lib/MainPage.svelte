@@ -1,6 +1,6 @@
 <script lang="ts">
   import { useClerkContext } from 'svelte-clerk/client';
-  import { onMount, afterUpdate } from 'svelte';
+  import { onMount } from 'svelte';
   import { 
     getMessages, 
     postChat, 
@@ -9,46 +9,24 @@
     getSummary,
     handleApiError 
   } from './api';
-  import { marked } from 'marked';
+  import Chat from './Chat.svelte';
+  import Analysis from './Analysis.svelte';
 
   export let navbarRef: any;
   
   const ctx = useClerkContext();
   
-  marked.setOptions({
-    breaks: true,
-    gfm: true,
-  });
-  
   // chat state
   let message = '';
-  let messages: Array<{role: string, content: string, timestamp?: string}> = [];
+  let messages: Array<{role: string, content: string}> = [];
   let loading = false;
   let chatError = '';
-  let messagesContainer: HTMLElement;
   
   // insights state
   let analysis: any = null;
   let summary: string | null = null;
   let analyzing = false;
   let insightsError = '';
-  
-  function formatTimestamp(timestamp: string): string {
-    const date = new Date(timestamp);
-    const time = date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
-    const dateStr = date.toLocaleDateString('sv-SE', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: '2-digit' 
-    }).replace(/\//g, '/');
-    return `${time} ${dateStr}`;
-  }
-  
-  afterUpdate(() => {
-    if (messagesContainer) {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-  });
   
   onMount(async () => {
     const token = await ctx.session?.getToken();
@@ -110,146 +88,25 @@
 <main class="w-full max-w-7xl mx-auto p-3 sm:p-6">
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 w-full">
     <div class="lg:col-span-2">
-      <div class="card h-[500px] sm:h-[600px] flex flex-col">
-        <div class="flex-1 overflow-y-auto scrollbar-hide relative" bind:this={messagesContainer}>
-          <div class="sticky top-0 h-8 bg-gradient-to-b from-[#151a21] via-[#151a21]/80 to-transparent pointer-events-none z-10"></div>
-          
-          <div class="p-4 space-y-4 -mt-8 pt-8">
-            {#each messages as msg}
-              <div class="flex {msg.role === 'user' ? 'justify-end' : 'justify-start'}">
-                <div class="max-w-[80%]">
-                  <div class="rounded-lg p-3 {msg.role === 'user' ? 'bg-blue-500' : 'bg-[#1a1f2e]'}">
-                    {#if msg.role === 'assistant'}
-                      <div class="prose prose-invert prose-sm max-w-none">
-                        {@html marked(msg.content)}
-                      </div>
-                    {:else}
-                      {msg.content}
-                    {/if}
-                  </div>
-                  {#if msg.role === 'user' && msg.timestamp}
-                    <div class="text-xs text-gray-500 mt-1 text-right">
-                      {formatTimestamp(msg.timestamp)}
-                    </div>
-                  {/if}
-                </div>
-              </div>
-            {/each}
-            {#if loading}
-              <div class="bg-[#1a1f2e] rounded-lg p-3 animate-pulse">Thinking...</div>
-            {/if}
-            {#if chatError}
-              <div class="bg-red-900/20 border border-red-800 rounded-lg p-3">
-                <p class="text-sm text-red-400">{chatError}</p>
-              </div>
-            {/if}
-          </div>
-        </div>
-        
-        <div class="border-t border-gray-800 p-4">
-          <form on:submit|preventDefault={sendMessage} class="flex gap-2">
-            <input
-              type="text"
-              bind:value={message}
-              placeholder="What's on your mind?"
-              class="input flex-1"
-              disabled={loading}
-            />
-            <button
-              type="submit"
-              disabled={loading || !message.trim()}
-              class="btn-primary disabled:bg-gray-700 disabled:cursor-not-allowed"
-            >
-              Send
-            </button>
-          </form>
-        </div>
-      </div>
+      <Chat 
+        {messages}
+        {message}
+        {loading}
+        {chatError}
+        onSendMessage={sendMessage}
+        onMessageChange={(value) => message = value}
+      />
     </div>
 
     <div>
-      <div class="card h-[500px] sm:h-[600px] flex flex-col relative">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-xl font-semibold">Your Insights</h2>
-          {#if analysis?.timestamp}
-            <span class="text-xs text-gray-500">
-              {formatTimestamp(analysis.timestamp)}
-            </span>
-          {/if}
-        </div>
-
-        {#if insightsError}
-          <div class="absolute top-16 left-4 right-4 bg-red-900/90 border border-red-800 rounded-lg p-3 z-20 animate-fade-in">
-            <div class="flex items-start justify-between gap-2">
-              <p class="text-sm text-red-400 flex-1">{insightsError}</p>
-              <button 
-                on:click={() => insightsError = ''}
-                class="text-red-400 hover:text-red-300"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        {/if}
-        
-        <div class="flex-1 overflow-y-auto scrollbar-hide">
-          {#if !analysis}
-            <p class="text-gray-400 text-sm">No analysis yet</p>
-          {:else}
-            {#if analysis.big_five_personality}
-              <div class="mb-6">
-                <h3 class="font-semibold mb-4">Big Five Personality</h3>
-                {#each Object.entries(analysis.big_five_personality) as [trait, score]}
-                  <div class="mb-3">
-                    <div class="flex justify-between text-sm mb-1">
-                      <span class="capitalize text-gray-300">{trait}</span>
-                      <span class="text-gray-400">{score}/10</span>
-                    </div>
-                    <div class="w-full bg-gray-800 rounded-full h-2">
-                      <div 
-                        class="{score > 5 ? 'bg-blue-500' : 'bg-gray-600'} h-2 rounded-full" 
-                        style="width: {score * 10}%"
-                      ></div>
-                    </div>
-                  </div>
-                {/each}
-              </div>
-            {/if}
-            
-            {#if analysis.attachment_style}
-              <div class="mb-6">
-                <h3 class="font-semibold mb-4">Attachment Style</h3>
-                <div class="bg-[#1a1f2e] border border-gray-700 rounded-lg p-4">
-                  <p class="font-semibold mb-2">{analysis.attachment_style.style}</p>
-                  <p class="text-sm text-gray-400">Anxiety: {analysis.attachment_style.anxiety_score}/10</p>
-                  <p class="text-sm text-gray-400">Avoidance: {analysis.attachment_style.avoidance_score}/10</p>
-                </div>
-              </div>
-            {/if}
-            
-            {#if summary}
-              <div>
-                <h3 class="font-semibold mb-4">Summary</h3>
-                <div class="bg-[#1a1f2e] border border-gray-700 rounded-lg p-4">
-                  <div class="prose prose-invert prose-sm max-w-none">
-                    {@html marked(summary)}
-                  </div>
-                </div>
-              </div>
-            {/if}
-          {/if}
-        </div>
-
-        <div class="border-t border-gray-800 pt-4 mt-4">
-          <button 
-            on:click={triggerAnalysis} 
-            disabled={analyzing}
-            class="w-full px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg disabled:bg-gray-700 disabled:opacity-50"
-          >
-            {analyzing ? 'Analysing...' : 'Generate Analysis'}
-          </button>
-        </div>
-      </div>
+      <Analysis
+        {analysis}
+        {summary}
+        {analyzing}
+        {insightsError}
+        onTriggerAnalysis={triggerAnalysis}
+        onClearError={() => insightsError = ''}
+      />
     </div>
   </div>
 </main>

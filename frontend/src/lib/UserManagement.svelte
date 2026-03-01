@@ -15,11 +15,14 @@
   let error = '';
   let purchasing = false;
 
-  function formatResetDate(resetDate: string): string {
-    const date = new Date(resetDate);
-    date.setDate(date.getDate() + 30);
-    return date.toLocaleDateString();
-  }
+  function formatResetDate(timestamp: string): string {
+    const date = new Date(timestamp);
+    const time = date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+  return `${time} ${day}/${month}/${year}`;
+}
   
   async function handleDeleteData() {
     if (!confirm('Delete all your chat history and insights?')) return;

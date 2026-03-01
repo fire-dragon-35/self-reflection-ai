@@ -1,6 +1,7 @@
 # backend/src/app.py
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from flask import Flask, request, jsonify, Response
@@ -17,7 +18,7 @@ from src.config import (
     TOKEN_PACKAGES,
     STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET,
-    MAX_CONTEXT
+    MAX_CONTEXT,
 )
 from src.auth import get_user_id
 from src.rate_limit import limiter
@@ -28,7 +29,12 @@ from src.services import (
     update_user_summary,
     get_or_create_user,
 )
-from src.usage import check_token_limit, use_tokens, get_user_usage, add_purchased_tokens
+from src.usage import (
+    check_token_limit,
+    use_tokens,
+    get_user_usage,
+    add_purchased_tokens,
+)
 from typing import cast
 import stripe
 from datetime import datetime, timezone
@@ -76,11 +82,12 @@ chat_ai = AI(
 )
 analysis_ai = AI(model=MODELS["haiku"], max_tokens=MAX_TOKENS["analysis"])
 
+
 # prevent caching in cloud
 def no_cache(response: Response) -> Response:
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
     return response
 
 
@@ -112,21 +119,21 @@ def post_chat():
     chat_history = load_user_chat_history(user_id)
     chat_history.append(
         {
-            "role": "user", 
+            "role": "user",
             "content": message_content,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
     )
 
-    response_text, tokens = chat_ai.ask(chat_history) # type: ignore
+    response_text, tokens = chat_ai.ask(chat_history)  # type: ignore
     if not response_text:
         response_text = "Sorry, I couldn't generate a response right now."
 
     chat_history.append(
         {
-            "role": "assistant", 
+            "role": "assistant",
             "content": response_text,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
     )
 
@@ -272,17 +279,19 @@ def create_checkout():
 
     data = request.get_json()
     package = data.get("packageType")
-    
+
     if package not in TOKEN_PACKAGES:
         return jsonify({"error": "Invalid package"}), 400
-    
+
     try:
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=["card"],
-            line_items=[{
-                "price": TOKEN_PACKAGES[package]["price_id"],
-                "quantity": 1,
-            }],
+            line_items=[
+                {
+                    "price": TOKEN_PACKAGES[package]["price_id"],
+                    "quantity": 1,
+                }
+            ],
             mode="payment",
             success_url=f"{ALLOWED_ORIGINS["production"]}/?success=true",
             cancel_url=f"{ALLOWED_ORIGINS["production"]}/?canceled=true",
@@ -291,9 +300,9 @@ def create_checkout():
                 "user_id": user_id,
                 "package": package,
                 "tokens": TOKEN_PACKAGES[package]["tokens"],
-            }
+            },
         )
-        
+
         return jsonify({"url": checkout_session.url})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -303,26 +312,27 @@ def create_checkout():
 def stripe_webhook():
     payload = request.data
     sig_header = request.headers.get("Stripe-Signature")
-    
+
     try:
-        event = stripe.Webhook.construct_event( # type: ignore
+        event = stripe.Webhook.construct_event(  # type: ignore
             payload, sig_header, STRIPE_WEBHOOK_SECRET
         )
     except Exception as e:
         return jsonify({"error": str(e)}), 400
-    
+
     # handle successful payment
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
         user_id = session["metadata"]["user_id"]
         tokens = int(session["metadata"]["tokens"])
-        
+
         # add purchased tokens
         add_purchased_tokens(user_id, tokens)
-        
+
         print(f"✨ Added {tokens} tokens to user {user_id}")
-    
+
     return jsonify({"status": "success"})
+
 
 with app.app_context():
     db.create_all()
